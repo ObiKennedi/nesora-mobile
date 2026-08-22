@@ -15,6 +15,7 @@ interface CardWrapperProps {
   showButton?: boolean
   buttonLabel?: string
   buttonLink: string
+  onGooglePress?: () => void
 }
 
 export const CardWrapper: React.FC<CardWrapperProps> = ({
@@ -25,6 +26,7 @@ export const CardWrapper: React.FC<CardWrapperProps> = ({
   showButton = true,
   buttonLabel,
   buttonLink,
+  onGooglePress,
 }) => {
   return (
     <ScrollView
@@ -46,7 +48,7 @@ export const CardWrapper: React.FC<CardWrapperProps> = ({
                 <View style={styles.dividerLine} />
               </View>
 
-              <ContinueWithGoogle onPress={() => {}} />
+              <ContinueWithGoogle onPress={onGooglePress} />
             </>
           )}
         </View>
