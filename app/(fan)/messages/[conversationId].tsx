@@ -1,25 +1,39 @@
-// app/(fan)/messages/[conversationId].tsx — Chat screen
+// app/(fan)/messages/[conversationId].tsx — NESORA Chat screen
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import {
-  View, FlatList, Text, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
+  View,
+  FlatList,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import { useLocalSearchParams, router } from 'expo-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, Send, Mic, Image as ImageIcon } from 'lucide-react-native'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/lib/auth'
+import { Colors, Radius, Shadows } from '@/constants/theme'
 
 export default function ChatScreen() {
-  const { conversationId } = useLocalSearchParams<{ conversationId: string }>()
+  const { conversationId, title } = useLocalSearchParams<{
+    conversationId: string
+    title?: string
+  }>()
   const { user } = useAuthStore()
   const qc = useQueryClient()
   const [text, setText] = useState('')
 
+  const headerTitle = title || 'Conversation'
+
   const { data, isLoading } = useQuery({
     queryKey: ['messages', conversationId],
     queryFn: () => api.get(`/messages/${conversationId}`).then((r) => r.data),
-    refetchInterval: 5000, // Poll every 5s as real-time alternative
+    refetchInterval: 3000, // Instant polling fallback
   })
 
   const send = useMutation({
@@ -34,70 +48,168 @@ export default function ChatScreen() {
   const msgs = data?.messages ?? []
 
   return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={s.back}>←</Text>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {/* Top Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <ArrowLeft size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={s.title}>Chat</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {headerTitle}
+        </Text>
+        <View style={{ width: 22 }} />
       </View>
 
       {isLoading ? (
-        <View style={s.loading}><ActivityIndicator color="#a855f7" /></View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator color={Colors.primary} size="large" />
+        </View>
       ) : (
         <FlatList
           data={msgs}
           keyExtractor={(m: any) => m.id}
+          inverted
           renderItem={({ item }: any) => {
-            const mine = item.senderId === user?.id
+            const isMine = item.senderId === user?.id
             return (
-              <View style={[s.bubble, mine ? s.mine : s.theirs]}>
-                <Text style={[s.msgText, mine && s.msgTextMine]}>
-                  {item.content ?? (item.type === 'VOICE_NOTE' ? '🎤 Voice note' : '📷 Media')}
+              <View
+                style={[
+                  styles.bubble,
+                  isMine ? styles.bubbleMine : styles.bubbleTheirs,
+                ]}
+              >
+                <Text style={[styles.msgText, isMine && styles.msgTextMine]}>
+                  {item.content ??
+                    (item.type === 'VOICE_NOTE'
+                      ? '🎤 Voice note'
+                      : '📷 Media attachment')}
                 </Text>
               </View>
             )
           }}
-          contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
         />
       )}
 
-      <View style={s.inputRow}>
+      {/* Message Input Row */}
+      <View style={styles.inputRow}>
         <TextInput
-          style={s.input}
+          style={styles.input}
           value={text}
           onChangeText={setText}
-          placeholder="Type a message…"
-          placeholderTextColor="#555"
+          placeholder="Write a message..."
+          placeholderTextColor={Colors.textMuted}
           multiline
           maxLength={2000}
         />
         <TouchableOpacity
-          style={[s.sendBtn, !text.trim() && s.sendBtnDisabled]}
-          onPress={() => { if (text.trim()) send.mutate(text.trim()) }}
+          style={[styles.sendBtn, !text.trim() && styles.sendBtnDisabled]}
+          onPress={() => {
+            if (text.trim()) send.mutate(text.trim())
+          }}
           disabled={!text.trim() || send.isPending}
+          activeOpacity={0.8}
         >
-          <Text style={s.sendArrow}>➤</Text>
+          {send.isPending ? (
+            <ActivityIndicator size="small" color={Colors.surface} />
+          ) : (
+            <Send size={18} color={Colors.surface} />
+          )}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   )
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0a0a0a' },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingTop: 56, paddingBottom: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#1a1a1a', gap: 16 },
-  back: { color: '#a855f7', fontSize: 24 },
-  title: { color: '#fff', fontWeight: '700', fontSize: 18 },
-  bubble: { maxWidth: '78%', borderRadius: 18, padding: 12, marginBottom: 8 },
-  mine: { backgroundColor: '#a855f7', alignSelf: 'flex-end' },
-  theirs: { backgroundColor: '#1a1a1a', alignSelf: 'flex-start' },
-  msgText: { color: '#fff', fontSize: 15, lineHeight: 22 },
-  msgTextMine: { color: '#fff' },
-  inputRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderTopWidth: 1, borderTopColor: '#1a1a1a', gap: 10 },
-  input: { flex: 1, backgroundColor: '#1a1a1a', borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10, color: '#fff', fontSize: 15, maxHeight: 120 },
-  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#a855f7', alignItems: 'center', justifyContent: 'center' },
-  sendBtnDisabled: { backgroundColor: '#333' },
-  sendArrow: { color: '#fff', fontSize: 18 },
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: Colors.bg,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 54,
+    paddingBottom: 14,
+    paddingHorizontal: 20,
+    backgroundColor: Colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    ...Shadows.sm,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  bubble: {
+    maxWidth: '80%',
+    borderRadius: Radius.lg,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginVertical: 4,
+  },
+  bubbleMine: {
+    backgroundColor: Colors.primary, // Terracotta brand color
+    alignSelf: 'flex-end',
+    borderBottomRightRadius: Radius.sm,
+  },
+  bubbleTheirs: {
+    backgroundColor: Colors.surface,
+    alignSelf: 'flex-start',
+    borderBottomLeftRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  msgText: {
+    fontSize: 15,
+    color: Colors.textPrimary,
+    lineHeight: 21,
+  },
+  msgTextMine: {
+    color: Colors.surface,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: Colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    gap: 10,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: Colors.bgAlt,
+    borderRadius: Radius.full,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    color: Colors.textPrimary,
+    fontSize: 15,
+    maxHeight: 100,
+  },
+  sendBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendBtnDisabled: {
+    backgroundColor: Colors.border,
+  },
 })
