@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Nesora",
+    "slug": "nesora",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "nesora",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0a"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.nesora.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Nesora uses your camera for video calls",
+        "NSMicrophoneUsageDescription": "Nesora uses your microphone for voice and video calls",
+        "NSUserNotificationsUsageDescription": "Nesora sends notifications for messages and calls"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0a"
+      },
+      "package": "com.nesora.app",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow Nesora to access your microphone."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
