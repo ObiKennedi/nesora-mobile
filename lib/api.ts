@@ -3,9 +3,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import * as SecureStore from 'expo-secure-store'
 
-export const API_BASE = __DEV__
-  ? 'http://localhost:4000/api/v1'
-  : 'https://api.nesora.org/api/v1'
+export const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://nesora-api-xi.vercel.app/api/v1'
 
 export const api = axios.create({
   baseURL: API_BASE,
