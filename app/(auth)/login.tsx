@@ -1,80 +1,219 @@
 // app/(auth)/login.tsx
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
 } from 'react-native'
 import { router } from 'expo-router'
+import { Eye, EyeOff, AlertCircle } from 'lucide-react-native'
+import { CardWrapper } from '@/components/auth/CardWrapper'
 import { useAuthStore } from '@/lib/auth'
+import { Colors, Radius } from '@/constants/theme'
 
 export default function LoginScreen() {
   const { login } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const handleLogin = async () => {
-    if (!email || !password) { Alert.alert('Error', 'Please enter your email and password.'); return }
+    setErrorMessage(null)
+    if (!email || !password) {
+      setErrorMessage('Please enter both your email address and password.')
+      return
+    }
+
     setLoading(true)
     try {
       await login(email.trim().toLowerCase(), password)
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? 'Invalid credentials. Please try again.'
-      Alert.alert('Login Failed', msg)
+      const msg = err?.response?.data?.message ?? 'Invalid email or password. Please try again.'
+      setErrorMessage(msg)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={s.container}>
-        <Text style={s.logo}>NESORA</Text>
-        <Text style={s.subtitle}>Sign in to continue</Text>
+    <CardWrapper
+      heading="Welcome back"
+      subHeading="Sign in to your NESORA account."
+      showSocials
+      showButton
+      buttonLabel="Don't have an account? Sign up"
+      buttonLink="/(auth)/register"
+    >
+      <View style={styles.form}>
+        {/* Email Field */}
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Email Address</Text>
+          <TextInput
+            style={[styles.input, errorMessage ? styles.inputError : null]}
+            placeholder="ada@example.com"
+            placeholderTextColor={Colors.textMuted}
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text)
+              if (errorMessage) setErrorMessage(null)
+            }}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            returnKeyType="next"
+            editable={!loading}
+          />
+        </View>
 
-        <TextInput
-          style={s.input}
-          placeholder="Email" placeholderTextColor="#666"
-          value={email} onChangeText={setEmail}
-          autoCapitalize="none" keyboardType="email-address" returnKeyType="next"
-        />
-        <TextInput
-          style={s.input}
-          placeholder="Password" placeholderTextColor="#666"
-          value={password} onChangeText={setPassword}
-          secureTextEntry returnKeyType="done" onSubmitEditing={handleLogin}
-        />
+        {/* Password Field */}
+        <View style={styles.fieldGroup}>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>Password</Text>
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/forgot-password')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.forgotLink}>Forgot password?</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.inputWrap}>
+            <TextInput
+              style={[styles.input, styles.inputPw, errorMessage ? styles.inputError : null]}
+              placeholder="Enter your password"
+              placeholderTextColor={Colors.textMuted}
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text)
+                if (errorMessage) setErrorMessage(null)
+              }}
+              secureTextEntry={!showPw}
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
+              editable={!loading}
+            />
+            <TouchableOpacity
+              style={styles.toggleBtn}
+              onPress={() => setShowPw((v) => !v)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              {showPw ? (
+                <EyeOff size={18} color={Colors.textSecondary} />
+              ) : (
+                <Eye size={18} color={Colors.textSecondary} />
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
 
-        <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
-          <Text style={s.forgotText}>Forgot password?</Text>
-        </TouchableOpacity>
+        {/* Error Feedback */}
+        {errorMessage && (
+          <View style={styles.errorBox}>
+            <AlertCircle size={16} color={Colors.error} style={{ marginRight: 6 }} />
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        )}
 
-        <TouchableOpacity style={[s.btn, loading && s.btnDisabled]} onPress={handleLogin} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Sign In</Text>}
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-          <Text style={s.switchText}>Don't have an account? <Text style={s.link}>Sign up</Text></Text>
+        {/* Submit Button */}
+        <TouchableOpacity
+          style={[styles.submitBtn, loading && styles.submitDisabled]}
+          onPress={handleLogin}
+          disabled={loading}
+          activeOpacity={0.85}
+        >
+          {loading ? (
+            <ActivityIndicator color={Colors.surface} size="small" />
+          ) : (
+            <Text style={styles.submitText}>Sign In</Text>
+          )}
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </CardWrapper>
   )
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0a0a0a' },
-  container: { flex: 1, justifyContent: 'center', paddingHorizontal: 28 },
-  logo: { fontSize: 36, fontWeight: '800', color: '#fff', letterSpacing: 4, textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#888', textAlign: 'center', marginBottom: 40 },
-  input: {
-    backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#333',
-    borderRadius: 12, padding: 16, color: '#fff', fontSize: 16, marginBottom: 16,
+const styles = StyleSheet.create({
+  form: {
+    width: '100%',
   },
-  forgotText: { color: '#a855f7', textAlign: 'right', marginBottom: 24, fontSize: 14 },
-  btn: { backgroundColor: '#a855f7', borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 24 },
-  btnDisabled: { opacity: 0.6 },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  switchText: { color: '#666', textAlign: 'center', fontSize: 14 },
-  link: { color: '#a855f7', fontWeight: '600' },
+  fieldGroup: {
+    marginBottom: 16,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 6,
+  },
+  forgotLink: {
+    fontSize: 13,
+    color: Colors.primary,
+    fontWeight: '500',
+  },
+  inputWrap: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: Colors.textPrimary,
+  },
+  inputPw: {
+    paddingRight: 44,
+  },
+  inputError: {
+    borderColor: Colors.error,
+  },
+  toggleBtn: {
+    position: 'absolute',
+    right: 14,
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.errorBg,
+    borderWidth: 1,
+    borderColor: '#F87171',
+    borderRadius: Radius.md,
+    padding: 10,
+    marginBottom: 16,
+  },
+  errorText: {
+    fontSize: 13,
+    color: Colors.error,
+    flex: 1,
+  },
+  submitBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.md,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  submitDisabled: {
+    opacity: 0.7,
+  },
+  submitText: {
+    color: Colors.surface,
+    fontSize: 16,
+    fontWeight: '600',
+  },
 })

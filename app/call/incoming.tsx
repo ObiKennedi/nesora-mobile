@@ -1,127 +1,184 @@
-// app/call/incoming.tsx — Full-screen incoming call ring screen
-// Shown when a VoIP push notification is received
+// app/call/incoming.tsx — WhatsApp-style Incoming Call Screen
 
-import { useEffect, useRef } from 'react'
+import React from 'react'
 import {
-  View, Text, Image, TouchableOpacity, StyleSheet,
-  Animated, Vibration,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
+  Image,
 } from 'react-native'
 import { useLocalSearchParams, router } from 'expo-router'
+import { Phone, PhoneOff, Shield, User } from 'lucide-react-native'
 import { api } from '@/lib/api'
 
 export default function IncomingCallScreen() {
-  const { callId, callType, fanName, fanImage, conversationId } = useLocalSearchParams<{
-    callId: string
-    callType: 'VOICE' | 'VIDEO'
-    fanName: string
-    fanImage?: string
-    conversationId: string
-  }>()
+  const { callId, callerName, callerAvatar, callType, roomUrl, roomToken } =
+    useLocalSearchParams<{
+      callId: string
+      callerName: string
+      callerAvatar?: string
+      callType: 'VOICE' | 'VIDEO'
+      roomUrl: string
+      roomToken: string
+    }>()
 
-  // Pulse animation for the avatar ring
-  const pulse = useRef(new Animated.Value(1)).current
+  const displayName = callerName || 'NESORA Contact'
 
-  useEffect(() => {
-    // Vibrate in a call pattern
-    Vibration.vibrate([500, 500, 500, 500, 500], true)
-
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.15, duration: 800, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1, duration: 800, useNativeDriver: true }),
-      ]),
-    )
-    anim.start()
-
-    // Auto-decline after 45 seconds (ring timeout)
-    const timeout = setTimeout(() => handleDecline(), 45_000)
-
-    return () => {
-      Vibration.cancel()
-      anim.stop()
-      clearTimeout(timeout)
-    }
-  }, [])
-
-  const handleAccept = async () => {
-    Vibration.cancel()
+  const acceptCall = async () => {
     try {
-      const { data } = await api.post(`/calls/${callId}/respond`, { accept: true })
-      if (data.accepted) {
-        router.replace({
-          pathname: '/call/active',
-          params: { callId, roomUrl: data.room.url, roomToken: data.room.token, callType },
-        })
-      }
-    } catch {
-      router.back()
+      await api.post(`/calls/${callId}/accept`).catch(() => {})
+    } finally {
+      router.replace({
+        pathname: '/call/active',
+        params: {
+          callId,
+          roomUrl,
+          roomToken,
+          callType: callType || 'VOICE',
+          name: displayName,
+          avatar: callerAvatar || '',
+        },
+      })
     }
   }
 
-  const handleDecline = async () => {
-    Vibration.cancel()
+  const rejectCall = async () => {
     try {
-      await api.post(`/calls/${callId}/respond`, { accept: false })
+      await api.post(`/calls/${callId}/reject`).catch(() => {})
     } finally {
       router.back()
     }
   }
 
   return (
-    <View style={s.root}>
-      <Text style={s.callTypeLabel}>
-        Incoming {callType === 'VOICE' ? '📞 Voice' : '📹 Video'} Call
-      </Text>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0B141A" />
 
-      <View style={s.avatarContainer}>
-        <Animated.View style={[s.pulseRing, { transform: [{ scale: pulse }] }]} />
-        <Image
-          source={{ uri: fanImage ?? 'https://via.placeholder.com/120' }}
-          style={s.avatar}
-        />
+      {/* Header Encryption Badge */}
+      <View style={styles.header}>
+        <Shield size={12} color="#8696A0" style={{ marginRight: 4 }} />
+        <Text style={styles.encryptionText}>End-to-end encrypted</Text>
       </View>
 
-      <Text style={s.callerName}>{fanName ?? 'A fan'}</Text>
-      <Text style={s.callerSub}>is calling you</Text>
+      {/* Caller Info */}
+      <View style={styles.callerSection}>
+        <Text style={styles.callTypeLabel}>
+          Incoming {callType === 'VIDEO' ? 'Video' : 'Voice'} Call
+        </Text>
+        <Text style={styles.callerName}>{displayName}</Text>
 
-      <View style={s.buttons}>
-        <TouchableOpacity style={s.declineBtn} onPress={handleDecline}>
-          <Text style={s.btnEmoji}>📵</Text>
-          <Text style={s.btnLabel}>Decline</Text>
+        <View style={styles.avatarContainer}>
+          {callerAvatar ? (
+            <Image source={{ uri: callerAvatar }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <User size={64} color="#8696A0" />
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* Accept / Decline Action Buttons */}
+      <View style={styles.actionsContainer}>
+        {/* Reject / Decline Button */}
+        <TouchableOpacity style={styles.declineBtn} onPress={rejectCall}>
+          <PhoneOff size={28} color="#FFFFFF" />
+          <Text style={styles.btnLabel}>Decline</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={s.acceptBtn} onPress={handleAccept}>
-          <Text style={s.btnEmoji}>{callType === 'VOICE' ? '📞' : '📹'}</Text>
-          <Text style={s.btnLabel}>Accept</Text>
+        {/* Accept Button */}
+        <TouchableOpacity style={styles.acceptBtn} onPress={acceptCall}>
+          <Phone size={28} color="#FFFFFF" />
+          <Text style={styles.btnLabel}>Accept</Text>
         </TouchableOpacity>
       </View>
     </View>
   )
 }
 
-const s = StyleSheet.create({
-  root: {
-    flex: 1, backgroundColor: '#0a0a0a',
-    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40,
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0B141A',
+    justifyContent: 'space-between',
+    paddingTop: 50,
+    paddingBottom: 60,
   },
-  callTypeLabel: { color: '#a855f7', fontSize: 16, fontWeight: '600', marginBottom: 48, letterSpacing: 1 },
-  avatarContainer: { width: 140, height: 140, marginBottom: 32, alignItems: 'center', justifyContent: 'center' },
-  pulseRing: {
-    position: 'absolute', width: 140, height: 140, borderRadius: 70,
-    borderWidth: 3, borderColor: '#a855f740',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  avatar: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: '#a855f7' },
-  callerName: { fontSize: 30, fontWeight: '800', color: '#fff', marginBottom: 8 },
-  callerSub: { fontSize: 16, color: '#888', marginBottom: 72 },
-  buttons: { flexDirection: 'row', gap: 48 },
+  encryptionText: {
+    color: '#8696A0',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  callerSection: {
+    alignItems: 'center',
+  },
+  callTypeLabel: {
+    color: '#8696A0',
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  callerName: {
+    color: '#E9EDEF',
+    fontSize: 28,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 40,
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarImage: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 3,
+    borderColor: '#1F2C34',
+  },
+  avatarFallback: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#1F2C34',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#2A3942',
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 40,
+  },
   declineBtn: {
-    width: 80, height: 80, borderRadius: 40,
-    backgroundColor: '#ff3b30', alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#DC2626',
   },
   acceptBtn: {
-    width: 80, height: 80, borderRadius: 40,
-    backgroundColor: '#34c759', alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#16A34A', // WhatsApp green accept
   },
-  btnEmoji: { fontSize: 28 },
-  btnLabel: { color: '#fff', fontSize: 11, marginTop: 4, fontWeight: '600' },
+  btnLabel: {
+    position: 'absolute',
+    bottom: -24,
+    color: '#E9EDEF',
+    fontSize: 12,
+    fontWeight: '500',
+  },
 })
