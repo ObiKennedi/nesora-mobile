@@ -31,7 +31,9 @@
         "CAMERA",
         "RECORD_AUDIO",
         "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "VIBRATE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "web": {
@@ -49,6 +51,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "3ceec72d-ae49-4814-a86d-e1e2b5a79b13"
+      }
+    },
+    "owner": "kennedytr1"
   }
 }
