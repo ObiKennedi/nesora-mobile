@@ -9,13 +9,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native'
-import * as WebBrowser from 'expo-web-browser'
 import { Colors, Radius } from '@/constants/theme'
 import { useAuthStore } from '@/lib/auth'
-import { router } from 'expo-router'
-
-// Complete web browser auth session on redirect
-WebBrowser.maybeCompleteAuthSession()
 
 interface ContinueWithGoogleProps {
   onPress?: () => void
@@ -27,7 +22,6 @@ export const ContinueWithGoogle: React.FC<ContinueWithGoogleProps> = ({
   disabled,
 }) => {
   const [loading, setLoading] = useState(false)
-  const { setUser } = useAuthStore()
 
   const handleGoogleAuth = async () => {
     if (onPress) {
@@ -36,30 +30,14 @@ export const ContinueWithGoogle: React.FC<ContinueWithGoogleProps> = ({
     }
 
     setLoading(true)
-    try {
-      // Backend OAuth URL or Google OAuth redirect
-      const apiBase = process.env.EXPO_PUBLIC_API_URL || 'https://nesora-api.onrender.com'
-      const authUrl = `${apiBase}/auth/google`
-
-      const result = await WebBrowser.openAuthSessionAsync(
-        authUrl,
-        'nesora://(auth)/callback'
-      )
-
-      if (result.type === 'success' && result.url) {
-        // Parse token/user parameters from redirect URL if returned
-        Alert.alert('Google Sign In', 'Google authentication successful!')
-        router.replace('/(fan)/feed' as any)
-      } else if (result.type === 'cancel' || result.type === 'dismiss') {
-        // User cancelled authentication session
-        console.log('User cancelled Google sign in')
-      }
-    } catch (error) {
-      console.error('Google Sign In Error:', error)
-      Alert.alert('Google Sign In', 'Could not complete Google authentication.')
-    } finally {
+    setTimeout(() => {
       setLoading(false)
-    }
+      Alert.alert(
+        'Google Sign-In',
+        'Google Authentication requires setting up your Google OAuth Client ID in Google Cloud Console. In the meantime, please sign in or register with your email address above.',
+        [{ text: 'OK' }]
+      )
+    }, 600)
   }
 
   return (
