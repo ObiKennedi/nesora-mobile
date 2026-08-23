@@ -26,6 +26,13 @@ type AuthState = {
   isLoading: boolean
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
+  googleLogin: (payload: {
+    email: string
+    name?: string
+    image?: string
+    googleId?: string
+    idToken?: string
+  }) => Promise<AuthUser>
   register: (payload: RegisterPayload) => Promise<void>
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
@@ -42,6 +49,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     await SecureStore.setItemAsync('accessToken', data.accessToken)
     await SecureStore.setItemAsync('refreshToken', data.refreshToken)
     set({ user: data.user, isAuthenticated: true })
+  },
+
+  googleLogin: async (payload) => {
+    const { data } = await api.post('/auth/google', payload)
+    if (data.accessToken) {
+      await SecureStore.setItemAsync('accessToken', data.accessToken)
+    }
+    if (data.refreshToken) {
+      await SecureStore.setItemAsync('refreshToken', data.refreshToken)
+    }
+    set({ user: data.user, isAuthenticated: true })
+    return data.user
   },
 
   register: async (payload) => {
