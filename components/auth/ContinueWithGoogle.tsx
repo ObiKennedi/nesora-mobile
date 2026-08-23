@@ -54,18 +54,9 @@ export const ContinueWithGoogle: React.FC<ContinueWithGoogleProps> = ({
   const [loading, setLoading] = useState(false)
   const { googleLogin } = useAuthStore()
 
-  const webClientId =
+  const clientId =
     process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
     '443484828850-7mb86lr6gdsr5770lceig7qcqrb7q3k4.apps.googleusercontent.com'
-  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
-  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID
-
-  const clientId =
-    Platform.select({
-      ios: iosClientId || webClientId,
-      android: androidClientId || webClientId,
-      default: webClientId,
-    }) || webClientId
 
   const handleGoogleAuth = async () => {
     if (onPress) {
@@ -75,10 +66,11 @@ export const ContinueWithGoogle: React.FC<ContinueWithGoogleProps> = ({
 
     setLoading(true)
     try {
-      const redirectUri = makeRedirectUri({
-        scheme: 'nesora',
-        path: 'auth/callback',
-      })
+      const redirectUri =
+        process.env.EXPO_PUBLIC_GOOGLE_REDIRECT_URI ||
+        makeRedirectUri({
+          native: 'https://auth.expo.io/@obidexterken/nesora',
+        })
 
       const { codeVerifier, codeChallenge } = await generatePKCE()
       const stateRandom = await Crypto.getRandomBytesAsync(16)
