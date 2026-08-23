@@ -1,8 +1,8 @@
-// app/(fan)/discover/index.tsx
-import { View, FlatList, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native'
+import { View, FlatList, Text, TouchableOpacity, StyleSheet, Image } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { api } from '@/lib/api'
+import { Loader } from '@/components/Loader'
 
 export default function DiscoverScreen() {
   const { data, isLoading } = useQuery({
@@ -10,12 +10,13 @@ export default function DiscoverScreen() {
     queryFn: () => api.get('/discover').then((r) => r.data),
   })
 
+  if (isLoading) {
+    return <Loader message="Discovering creators…" />
+  }
+
   return (
     <View style={s.root}>
       <View style={s.header}><Text style={s.title}>Discover</Text></View>
-      {isLoading ? (
-        <View style={s.loading}><ActivityIndicator color="#a855f7" size="large" /></View>
-      ) : (
         <FlatList
           data={data ?? []}
           keyExtractor={(i: any) => i.id}

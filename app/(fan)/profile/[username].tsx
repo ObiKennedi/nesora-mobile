@@ -1,9 +1,8 @@
-// app/(fan)/profile/[username].tsx — Creator profile
-
-import { ScrollView, View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import { ScrollView, View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native'
 import { useLocalSearchParams, router } from 'expo-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { Loader } from '@/components/Loader'
 
 export default function CreatorProfileScreen() {
   const { username } = useLocalSearchParams<{ username: string }>()
@@ -25,7 +24,7 @@ export default function CreatorProfileScreen() {
   })
 
   if (isLoading) {
-    return <View style={s.loading}><ActivityIndicator color="#a855f7" size="large" /></View>
+    return <Loader message="Loading profile…" />
   }
 
   if (!data?.creator) {

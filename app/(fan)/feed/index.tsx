@@ -8,6 +8,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import PostCard from '@/components/feed/PostCard'
 
+import { Loader } from '@/components/Loader'
+
 async function fetchFeed(page = 1, category = 'ALL') {
   const { data } = await api.get('/feed', { params: { page, category } })
   return data
@@ -29,11 +31,7 @@ export default function FeedScreen() {
   }, [queryClient])
 
   if (isLoading) {
-    return (
-      <View style={s.loading}>
-        <ActivityIndicator color="#a855f7" size="large" />
-      </View>
-    )
+    return <Loader message="Loading your feed…" />
   }
 
   const posts = data?.posts ?? []
