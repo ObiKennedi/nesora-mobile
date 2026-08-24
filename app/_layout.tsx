@@ -45,6 +45,7 @@ export default function RootLayout() {
           <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(fan)" />
           <Stack.Screen name="call" />
+          <Stack.Screen name="+not-found" />
         </Stack>
       </QueryClientProvider>
     </GestureHandlerRootView>
