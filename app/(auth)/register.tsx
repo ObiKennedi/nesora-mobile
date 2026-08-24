@@ -58,10 +58,10 @@ export default function RegisterScreen() {
         email: email.trim().toLowerCase(),
         password,
       })
-      setFeedback({ type: 'success', message: 'Account created successfully! Redirecting...' })
-      setTimeout(() => {
-        router.replace('/(fan)/home')
-      }, 1000)
+      router.replace({
+        pathname: '/(auth)/verify-pending' as any,
+        params: { email: email.trim().toLowerCase(), password },
+      })
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? 'Failed to create account. Please try again.'
       setFeedback({ type: 'error', message: msg })

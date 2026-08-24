@@ -97,8 +97,8 @@ export const ContinueWithGoogle: React.FC<ContinueWithGoogleProps> = ({
           idToken: idToken || undefined,
         })
 
-        if (loggedInUser?.onboardingType) {
-          router.replace('/(fan)/feed' as any)
+        if (!loggedInUser?.onboardingType) {
+          router.replace('/(onboarding)/select-type' as any)
         } else {
           router.replace('/(fan)/feed' as any)
         }
