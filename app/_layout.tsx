@@ -23,6 +23,8 @@ export default function RootLayout() {
       router.replace('/(auth)/login')
     } else if (!user?.onboardingType) {
       router.replace('/(onboarding)/select-type')
+    } else if (user?.onboardingType === 'CREATOR') {
+      router.replace('/(creator)/dashboard' as any)
     } else {
       router.replace('/(fan)/feed')
     }
@@ -44,6 +46,7 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(fan)" />
+          <Stack.Screen name="(creator)" />
           <Stack.Screen name="call" />
           <Stack.Screen name="+not-found" />
         </Stack>
