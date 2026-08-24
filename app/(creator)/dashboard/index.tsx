@@ -98,7 +98,7 @@ export default function CreatorDashboardScreen() {
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <Text style={styles.avatarInitial}>
-                  {(user?.name || user?.firstName || 'C')[0].toUpperCase()}
+                  {(user?.name || 'C')[0].toUpperCase()}
                 </Text>
               </View>
             )}
