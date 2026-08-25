@@ -22,13 +22,16 @@ import {
   ArrowRight,
   Shield,
   TrendingUp,
+  Plus,
 } from 'lucide-react-native'
 import { useAuthStore } from '@/lib/auth'
 import { api } from '@/lib/api'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Colors, Radius } from '@/constants/theme'
+import { Colors, Radius, Shadows } from '@/constants/theme'
 
 import { SideDrawer } from '@/components/navigation/SideDrawer'
+import { CreatePostActionModal } from '@/components/creator/CreatePostActionModal'
+
 
 async function fetchCreatorStats() {
   try {
@@ -54,6 +57,7 @@ export default function CreatorDashboardScreen() {
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = useState(false)
   const [drawerVisible, setDrawerVisible] = useState(false)
+  const [createModalVisible, setCreateModalVisible] = useState(false)
 
   const { data: stats } = useQuery({
     queryKey: ['creatorStats'],
@@ -82,7 +86,6 @@ export default function CreatorDashboardScreen() {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Dashboard</Text>
         </View>
-
 
         <View style={styles.headerRight}>
           <TouchableOpacity
@@ -124,6 +127,28 @@ export default function CreatorDashboardScreen() {
           />
         }
       >
+        {/* ── Upload New Post Hero Action Card ── */}
+        <TouchableOpacity
+          style={styles.uploadHeroCard}
+          onPress={() => setCreateModalVisible(true)}
+          activeOpacity={0.88}
+        >
+          <View style={styles.uploadHeroLeft}>
+            <View style={styles.uploadHeroIconBox}>
+              <Plus size={22} color="#FFFFFF" strokeWidth={2.6} />
+            </View>
+            <View>
+              <Text style={styles.uploadHeroTitle}>Upload New Content</Text>
+              <Text style={styles.uploadHeroSub}>
+                Photos, Videos, Shorts, Audio, Polls & Stories
+              </Text>
+            </View>
+          </View>
+          <View style={styles.uploadHeroPill}>
+            <Text style={styles.uploadHeroPillText}>+ Create</Text>
+          </View>
+        </TouchableOpacity>
+
         {/* ── Card 1: Total Followers ── */}
         <View style={styles.statCard}>
           <View style={[styles.iconBox, { backgroundColor: '#FDEEE9' }]}>
@@ -192,9 +217,16 @@ export default function CreatorDashboardScreen() {
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
       />
+
+      {/* ── Upload Post Action Modal ── */}
+      <CreatePostActionModal
+        visible={createModalVisible}
+        onClose={() => setCreateModalVisible(false)}
+      />
     </View>
   )
 }
+
 
 
 const styles = StyleSheet.create({
@@ -271,7 +303,57 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
     gap: 14,
   },
+  uploadHeroCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: '#FED7AA',
+    ...Shadows.sm,
+  },
+  uploadHeroLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  uploadHeroIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadHeroTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  uploadHeroSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
+    maxWidth: 200,
+  },
+  uploadHeroPill: {
+    backgroundColor: '#FFF7ED',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+  },
+  uploadHeroPillText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: Colors.primary,
+  },
   statCard: {
+
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 20,

@@ -29,7 +29,10 @@ import { LiveStreamCard, LiveStream } from '@/components/feed/LiveStreamCard'
 import { MembershipModal } from '@/components/membership/MembershipModal'
 import { SideDrawer } from '@/components/navigation/SideDrawer'
 import { Loader } from '@/components/Loader'
+import { StoriesRail } from '@/components/feed/StoriesRail'
+import { CreatePostActionModal } from '@/components/creator/CreatePostActionModal'
 import { Colors, Radius, Shadows } from '@/constants/theme'
+
 
 
 const CATEGORIES = [
@@ -68,6 +71,8 @@ export default function FeedScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [membershipModalVisible, setMembershipModalVisible] = useState(false)
   const [drawerVisible, setDrawerVisible] = useState(false)
+  const [createModalVisible, setCreateModalVisible] = useState(false)
+
 
   // Posts Feed query
   const { data: feedData, isLoading: loadingFeed } = useQuery({
@@ -208,8 +213,12 @@ export default function FeedScreen() {
         </View>
       </View>
 
+      {/* ── Stories & Live Rail at Top of Feed ── */}
+      <StoriesRail onAddStoryPress={() => setCreateModalVisible(true)} />
+
       {/* ── Category Pills (Horizontal Scroll) ── */}
       <View style={styles.categoriesWrapper}>
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -352,9 +361,16 @@ export default function FeedScreen() {
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
       />
+
+      {/* ── Create / Upload Post Modal ── */}
+      <CreatePostActionModal
+        visible={createModalVisible}
+        onClose={() => setCreateModalVisible(false)}
+      />
     </View>
   )
 }
+
 
 const styles = StyleSheet.create({
   root: {
