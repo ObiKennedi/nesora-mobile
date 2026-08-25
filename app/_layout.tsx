@@ -8,8 +8,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { queryClient } from '@/lib/query-client'
 import { useAuthStore } from '@/lib/auth'
 import { registerPushToken, setupPushListeners } from '@/lib/push'
+import { GlobalCallListener } from '@/components/call/GlobalCallListener'
 
 export default function RootLayout() {
+
   const { checkAuth, isLoading, isAuthenticated, user, activeMode } = useAuthStore()
 
   useEffect(() => {
@@ -42,6 +44,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="light" />
+        <GlobalCallListener />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />
@@ -55,3 +58,4 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   )
 }
+
