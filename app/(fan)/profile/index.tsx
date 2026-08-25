@@ -19,7 +19,9 @@ import {
   LogOut,
   ChevronRight,
   Shield,
+  CreditCard,
 } from 'lucide-react-native'
+
 import { useAuthStore } from '@/lib/auth'
 import { Colors, Radius } from '@/constants/theme'
 
@@ -85,6 +87,20 @@ export default function YouProfileScreen() {
               <Wallet size={18} color="#2E7D32" />
             </View>
             <Text style={styles.menuText}>Wallet & Payments</Text>
+          </View>
+          <ChevronRight size={18} color={Colors.textMuted} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('/(fan)/profile/billing' as any)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.menuLeft}>
+            <View style={[styles.menuIconWrap, { backgroundColor: '#FFF7ED' }]}>
+              <CreditCard size={18} color="#EA580C" />
+            </View>
+            <Text style={styles.menuText}>Billing & Subscriptions</Text>
           </View>
           <ChevronRight size={18} color={Colors.textMuted} />
         </TouchableOpacity>

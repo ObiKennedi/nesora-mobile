@@ -22,7 +22,9 @@ import {
   ChevronRight,
   LogOut,
   Trash2,
+  CreditCard,
 } from 'lucide-react-native'
+
 import { useAuthStore } from '@/lib/auth'
 import { MembershipModal } from '@/components/membership/MembershipModal'
 import { Colors, Radius, Shadows } from '@/constants/theme'
@@ -101,6 +103,25 @@ export default function SettingsAndPrivacyScreen() {
           </View>
           <ChevronRight size={18} color="#EA580C" />
         </TouchableOpacity>
+
+        {/* ── Billing & Subscriptions Link ── */}
+        <Text style={styles.sectionHeader}>BILLING & SUBSCRIPTIONS</Text>
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.actionRow}
+            onPress={() => router.push('/(fan)/profile/billing' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.actionLeft}>
+              <CreditCard size={18} color="#EA580C" />
+              <View>
+                <Text style={styles.actionTitle}>Manage Plans & Invoices</Text>
+                <Text style={styles.actionSub}>Platform membership, creator subscriptions & history</Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color="#94A3B8" />
+          </TouchableOpacity>
+        </View>
 
         {/* ── Account Section ── */}
         <Text style={styles.sectionHeader}>ACCOUNT INFORMATION</Text>
@@ -366,6 +387,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#0F172A',
   },
+  actionSub: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 1,
+  },
+
   dangerZone: {
     marginTop: 10,
     gap: 12,
