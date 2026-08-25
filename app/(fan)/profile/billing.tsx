@@ -10,34 +10,26 @@ import {
   RefreshControl,
   Image,
   StatusBar,
-  Alert,
-  Linking,
 } from 'react-native'
 import { router } from 'expo-router'
 import {
   ArrowLeft,
   Sparkles,
   CreditCard,
-  CheckCircle2,
   Calendar,
-  ExternalLink,
   ShieldCheck,
-  ChevronRight,
   User,
-  Zap,
-  ArrowUpRight,
   ArrowDownLeft,
   Plus,
 } from 'lucide-react-native'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { formatDistanceToNow, format } from 'date-fns'
+import { useQuery } from '@tanstack/react-query'
+import { format } from 'date-fns'
 import { api } from '@/lib/api'
 import { MembershipModal } from '@/components/membership/MembershipModal'
 import { WalletModal } from '@/components/wallet/WalletModal'
 import { Colors, Radius, Shadows } from '@/constants/theme'
 
 export default function BillingScreen() {
-  const queryClient = useQueryClient()
   const [membershipModalVisible, setMembershipModalVisible] = useState(false)
   const [walletModalVisible, setWalletModalVisible] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -196,7 +188,7 @@ export default function BillingScreen() {
             <Text style={styles.emptySubsDesc}>
               When you subscribe to individual creator plans, they will appear here.
             </Text>
-          </TouchableOpacity>
+          </View>
         ) : (
           <View style={styles.subsList}>
             {creatorSubs.map((sub: any) => {
@@ -509,7 +501,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  /* Creator Subs */
   emptySubsCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
@@ -593,7 +584,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#475569',
   },
-  /* Wallet Row */
   walletRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -625,7 +615,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#EA580C',
   },
-  /* Billing History */
   historyList: {
     gap: 8,
     marginBottom: 20,
