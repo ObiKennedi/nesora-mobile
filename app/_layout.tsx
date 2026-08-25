@@ -1,7 +1,5 @@
-// app/_layout.tsx — Root layout: bootstraps auth, push, query client
-
 import { useEffect } from 'react'
-import { Stack, router } from 'expo-router'
+import { Stack, router, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -11,8 +9,8 @@ import { registerPushToken, setupPushListeners } from '@/lib/push'
 import { GlobalCallListener } from '@/components/call/GlobalCallListener'
 
 export default function RootLayout() {
-
   const { checkAuth, isLoading, isAuthenticated, user, activeMode } = useAuthStore()
+  const segments = useSegments()
 
   useEffect(() => {
     checkAuth()
@@ -21,16 +19,26 @@ export default function RootLayout() {
   useEffect(() => {
     if (isLoading) return
 
+    const inAuthGroup = segments[0] === '(auth)'
+    const inOnboardingGroup = segments[0] === '(onboarding)'
+
     if (!isAuthenticated) {
-      router.replace('/(auth)/login')
+      if (!inAuthGroup) {
+        router.replace('/(auth)/login')
+      }
     } else if (!user?.onboardingType) {
-      router.replace('/(onboarding)/select-type')
-    } else if (activeMode === 'CREATOR' || user?.onboardingType === 'CREATOR') {
-      router.replace('/(creator)/dashboard' as any)
-    } else {
-      router.replace('/(fan)/feed')
+      if (!inOnboardingGroup) {
+        router.replace('/(onboarding)/select-type')
+      }
+    } else if (inAuthGroup || inOnboardingGroup || segments.length === 0) {
+      if (activeMode === 'CREATOR' || user?.onboardingType === 'CREATOR') {
+        router.replace('/(creator)/dashboard' as any)
+      } else {
+        router.replace('/(fan)/feed')
+      }
     }
-  }, [isLoading, isAuthenticated])
+  }, [isLoading, isAuthenticated, user?.onboardingType, activeMode, segments])
+
 
 
   useEffect(() => {

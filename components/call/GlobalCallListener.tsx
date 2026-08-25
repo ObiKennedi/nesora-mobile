@@ -13,9 +13,10 @@ export function GlobalCallListener() {
     if (!isAuthenticated || !user) return
 
     // Don't poll if already on a call screen
-    if (pathname.includes('/call/incoming') || pathname.includes('/call/active')) {
+    if (typeof pathname === 'string' && (pathname.includes('/call/incoming') || pathname.includes('/call/active'))) {
       return
     }
+
 
     const checkIncoming = async () => {
       try {
