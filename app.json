@@ -16,11 +16,15 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.nesora.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Nesora uses your camera for video calls",
-        "NSMicrophoneUsageDescription": "Nesora uses your microphone for voice and video calls",
-        "NSUserNotificationsUsageDescription": "Nesora sends notifications for messages and calls"
+        "NSCameraUsageDescription": "Nesora uses your camera for video calls and post media creation.",
+        "NSMicrophoneUsageDescription": "Nesora uses your microphone for voice calls, video calls, and voice notes.",
+        "NSPhotoLibraryUsageDescription": "Nesora needs access to your photos to upload media to your feed and stories.",
+        "NSPhotoLibraryAddUsageDescription": "Nesora needs permission to save media to your library.",
+        "NSUserNotificationsUsageDescription": "Nesora sends you instant notifications for new messages, calls, tips, and subscriber updates.",
+        "UIBackgroundModes": ["audio", "voip", "remote-notification", "fetch"]
       }
     },
+
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

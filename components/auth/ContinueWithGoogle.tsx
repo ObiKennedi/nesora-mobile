@@ -35,8 +35,12 @@ export const ContinueWithGoogle: React.FC<ContinueWithGoogleProps> = ({
     androidClientId:
       process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
       '443484828850-ec9nhf0gvsp9l0f5g7njhije1qggc0a5.apps.googleusercontent.com',
+    iosClientId:
+      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
+      '443484828850-7mb86lr6gdsr5770lceig7qcqrb7q3k4.apps.googleusercontent.com',
     scopes: ['openid', 'profile', 'email'],
   })
+
 
   useEffect(() => {
     if (response?.type === 'success') {
