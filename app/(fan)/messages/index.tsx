@@ -1,6 +1,6 @@
 // app/(fan)/messages/index.tsx — Conversation list matching NESORA design system
 
-import React from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   View,
   FlatList,
@@ -9,25 +9,63 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
-import { User } from 'lucide-react-native'
+import {
+  User,
+  SquarePen,
+  Mail,
+  Plus,
+  Sparkles,
+} from 'lucide-react-native'
 import { api } from '@/lib/api'
 import { Colors, Radius, Shadows } from '@/constants/theme'
+import { NewMessageModal } from '@/components/messages/NewMessageModal'
 
 export default function MessagesScreen() {
+  const queryClient = useQueryClient()
+  const [modalVisible, setModalVisible] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+
   const { data, isLoading } = useQuery({
     queryKey: ['conversations'],
     queryFn: () => api.get('/messages').then((r) => r.data),
   })
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await queryClient.invalidateQueries({ queryKey: ['conversations'] })
+    setRefreshing(false)
+  }, [queryClient])
+
+  const handleOpenConversation = (conversationId: string, title?: string) => {
+    router.push({
+      pathname: '/(fan)/messages/[conversationId]',
+      params: {
+        conversationId,
+        title: title || 'Chat',
+      },
+    })
+  }
+
   return (
     <View style={styles.root}>
+      {/* ── Top Header ── */}
       <View style={styles.header}>
         <Text style={styles.title}>Messages</Text>
+        <TouchableOpacity
+          style={styles.newChatBtn}
+          onPress={() => setModalVisible(true)}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <SquarePen size={18} color={Colors.textPrimary} />
+        </TouchableOpacity>
       </View>
 
+      {/* ── Content ── */}
       {isLoading ? (
         <View style={styles.loading}>
           <ActivityIndicator color={Colors.primary} size="large" />
@@ -36,17 +74,22 @@ export default function MessagesScreen() {
         <FlatList
           data={data ?? []}
           keyExtractor={(item: any) => item.id}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={Colors.primary}
+              colors={[Colors.primary]}
+            />
+          }
           renderItem={({ item }: any) => (
             <TouchableOpacity
               style={styles.row}
               onPress={() =>
-                router.push({
-                  pathname: '/(fan)/messages/[conversationId]',
-                  params: {
-                    conversationId: item.id,
-                    title: item.creator?.displayName || 'Chat',
-                  },
-                })
+                handleOpenConversation(
+                  item.id,
+                  item.creator?.displayName || 'Chat',
+                )
               }
               activeOpacity={0.7}
             >
@@ -57,12 +100,16 @@ export default function MessagesScreen() {
                 />
               ) : (
                 <View style={styles.avatarFallback}>
-                  <User size={24} color={Colors.textMuted} />
+                  <Text style={styles.avatarInitial}>
+                    {(item.creator?.displayName || 'C')[0].toUpperCase()}
+                  </Text>
                 </View>
               )}
 
               <View style={styles.info}>
-                <Text style={styles.name}>{item.creator?.displayName || 'Creator'}</Text>
+                <Text style={styles.name}>
+                  {item.creator?.displayName || 'Creator'}
+                </Text>
                 <Text style={styles.preview} numberOfLines={1}>
                   {item.lastMessageText ?? 'No messages yet'}
                 </Text>
@@ -77,11 +124,36 @@ export default function MessagesScreen() {
           )}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyText}>No conversations yet</Text>
+              <View style={styles.emptyIconBox}>
+                <Mail size={32} color={Colors.textMuted} strokeWidth={1.5} />
+              </View>
+              <Text style={styles.emptyTitle}>No conversations yet</Text>
+              <Text style={styles.emptySub}>
+                Send a message request to start chatting with a creator
+              </Text>
+
+              <TouchableOpacity
+                style={styles.emptyActionBtn}
+                onPress={() => setModalVisible(true)}
+                activeOpacity={0.85}
+              >
+                <Plus size={16} color="#FFFFFF" strokeWidth={2.5} style={{ marginRight: 6 }} />
+                <Text style={styles.emptyActionBtnText}>New Message</Text>
+              </TouchableOpacity>
             </View>
+          }
+          contentContainerStyle={
+            (!data || data.length === 0) ? { flex: 1 } : { paddingBottom: 20 }
           }
         />
       )}
+
+      {/* ── New Message Modal ── */}
+      <NewMessageModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onOpenConversation={handleOpenConversation}
+      />
     </View>
   )
 }
@@ -89,7 +161,7 @@ export default function MessagesScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.bg,
+    backgroundColor: '#FFFFFF',
   },
   loading: {
     flex: 1,
@@ -97,79 +169,133 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   header: {
-    paddingTop: 54,
-    paddingBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 52,
+    paddingBottom: 14,
     paddingHorizontal: 20,
-    backgroundColor: Colors.surface,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    ...Shadows.sm,
+    borderBottomColor: '#F0ECE4',
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
-    color: Colors.textPrimary,
+    color: '#1A202C',
     letterSpacing: -0.3,
+  },
+  newChatBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#F7F5F2',
+    borderWidth: 1,
+    borderColor: '#EAE6DF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: Colors.surface,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: '#F4F2EE',
     gap: 14,
   },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: Colors.bgAlt,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F4F2EE',
   },
   avatarFallback: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: Colors.bgAlt,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FDEEE9',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
+  },
+  avatarInitial: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.primary,
   },
   info: {
     flex: 1,
   },
   name: {
-    color: Colors.textPrimary,
+    color: '#1A202C',
     fontWeight: '600',
-    fontSize: 16,
-    marginBottom: 4,
+    fontSize: 15,
+    marginBottom: 3,
   },
   preview: {
-    color: Colors.textSecondary,
-    fontSize: 14,
+    color: '#718096',
+    fontSize: 13.5,
   },
   badge: {
     backgroundColor: Colors.primary,
     borderRadius: 10,
-    minWidth: 22,
-    height: 22,
+    minWidth: 20,
+    height: 20,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
   },
   badgeText: {
-    color: Colors.surface,
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '700',
   },
   empty: {
+    flex: 1,
     alignItems: 'center',
-    paddingTop: 80,
+    justifyContent: 'center',
+    paddingHorizontal: 36,
+    paddingBottom: 60,
   },
-  emptyText: {
-    color: Colors.textMuted,
-    fontSize: 15,
+  emptyIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    backgroundColor: '#F8F6F2',
+    borderWidth: 1,
+    borderColor: '#EAE6DF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#2D3748',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptySub: {
+    fontSize: 13.5,
+    color: '#8C96A5',
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 24,
+  },
+  emptyActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: Radius.full,
+    ...Shadows.sm,
+  },
+  emptyActionBtnText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 })
+

@@ -1,7 +1,7 @@
 // app/(fan)/_layout.tsx — Bottom tab navigator matching NESORA screenshot design
 import React from 'react'
 import { Tabs } from 'expo-router'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 import {
   Home,
   Compass,
@@ -11,32 +11,11 @@ import {
 } from 'lucide-react-native'
 import { Colors } from '@/constants/theme'
 
-function TabIcon({
-  icon: IconComponent,
-  label,
-  focused,
-}: {
-  icon: any
-  label: string
-  focused: boolean
-}) {
-  return (
-    <View style={styles.tab}>
-      <IconComponent
-        size={22}
-        color={focused ? Colors.primary : '#94A3B8'}
-        strokeWidth={focused ? 2.3 : 1.8}
-      />
-      <Text style={[styles.label, focused && styles.labelFocused]}>{label}</Text>
-    </View>
-  )
-}
-
 function CenterPlusButton() {
   return (
     <View style={styles.plusWrapper}>
       <View style={styles.plusCircle}>
-        <Plus size={24} color="#FFFFFF" strokeWidth={2.8} />
+        <Plus size={22} color="#FFFFFF" strokeWidth={2.8} />
       </View>
     </View>
   )
@@ -47,28 +26,45 @@ export default function FanTabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: '#8E8E93',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
           borderTopColor: '#EBE7E0',
-          height: 68,
-          paddingBottom: 10,
-          paddingTop: 6,
+          height: 60,
+          paddingBottom: 6,
+          paddingTop: 4,
           elevation: 8,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.05,
           shadowRadius: 6,
         },
-        tabBarShowLabel: false,
+        tabBarItemStyle: {
+          paddingVertical: 2,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '500',
+          marginTop: 1,
+          letterSpacing: -0.1,
+        },
       }}
     >
       {/* ── 1. Home Feed ── */}
       <Tabs.Screen
         name="feed/index"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon={Home} label="Home" focused={focused} />
+          title: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <Home
+              size={20}
+              color={color}
+              strokeWidth={focused ? 2.3 : 1.8}
+            />
           ),
         }}
       />
@@ -77,8 +73,13 @@ export default function FanTabLayout() {
       <Tabs.Screen
         name="discover/index"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon={Compass} label="Explore" focused={focused} />
+          title: 'Explore',
+          tabBarIcon: ({ color, focused }) => (
+            <Compass
+              size={20}
+              color={color}
+              strokeWidth={focused ? 2.3 : 1.8}
+            />
           ),
         }}
       />
@@ -87,6 +88,8 @@ export default function FanTabLayout() {
       <Tabs.Screen
         name="create"
         options={{
+          title: '',
+          tabBarLabel: () => null,
           tabBarIcon: () => <CenterPlusButton />,
         }}
       />
@@ -95,8 +98,13 @@ export default function FanTabLayout() {
       <Tabs.Screen
         name="messages/index"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon={MessageCircle} label="Messages" focused={focused} />
+          title: 'Messages',
+          tabBarIcon: ({ color, focused }) => (
+            <MessageCircle
+              size={20}
+              color={color}
+              strokeWidth={focused ? 2.3 : 1.8}
+            />
           ),
         }}
       />
@@ -105,8 +113,13 @@ export default function FanTabLayout() {
       <Tabs.Screen
         name="profile/index"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon={User} label="You" focused={focused} />
+          title: 'You',
+          tabBarIcon: ({ color, focused }) => (
+            <User
+              size={20}
+              color={color}
+              strokeWidth={focused ? 2.3 : 1.8}
+            />
           ),
         }}
       />
@@ -153,37 +166,23 @@ export default function FanTabLayout() {
 }
 
 const styles = StyleSheet.create({
-  tab: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 4,
-  },
-  label: {
-    fontSize: 10.5,
-    color: '#94A3B8',
-    marginTop: 3,
-    fontWeight: '500',
-  },
-  labelFocused: {
-    color: Colors.primary,
-    fontWeight: '700',
-  },
   plusWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    top: -4,
+    top: -6,
   },
   plusCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.35,
-    shadowRadius: 6,
+    shadowRadius: 5,
     elevation: 6,
   },
 })
+
