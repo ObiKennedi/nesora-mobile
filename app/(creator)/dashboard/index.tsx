@@ -97,9 +97,10 @@ export default function CreatorDashboardScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => router.push('/(fan)/profile' as any)}
+            onPress={() => setDrawerVisible(true)}
             activeOpacity={0.8}
           >
+
             {user?.image ? (
               <Image source={{ uri: user.image }} style={styles.avatar} />
             ) : (
@@ -170,7 +171,11 @@ export default function CreatorDashboardScreen() {
         </View>
 
         {/* ── Card 3: Monthly Earnings ── */}
-        <View style={styles.statCard}>
+        <TouchableOpacity
+          style={styles.statCard}
+          onPress={() => router.push('/(creator)/wallet' as any)}
+          activeOpacity={0.85}
+        >
           <View style={[styles.iconBox, { backgroundColor: '#EBF4FF' }]}>
             <DollarSign size={20} color="#3B82F6" />
           </View>
@@ -179,9 +184,10 @@ export default function CreatorDashboardScreen() {
           </Text>
           <Text style={styles.statLabel}>Monthly Earnings</Text>
           <Text style={styles.statSub}>
-            {stats?.earningsSubtext ?? 'Subscriptions + gifts'}
+            {stats?.earningsSubtext ?? 'Subscriptions + gifts · Tap to view wallet'}
           </Text>
-        </View>
+        </TouchableOpacity>
+
 
         {/* ── Card 4: Paid Calls & Streams ── */}
         <View style={styles.statCard}>

@@ -1,5 +1,5 @@
-// app/(creator)/messages/index.tsx — Creator Direct Messages & Message Requests Manager
-import React, { useState } from 'react'
+// app/(creator)/messages/index.tsx — Creator Direct Messages matching screenshot design
+import React, { useState, useMemo } from 'react'
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import {
 } from 'react-native'
 import { router } from 'expo-router'
 import {
+  Menu,
+  Bell,
   MessageCircle,
   Mail,
   CheckCircle2,
@@ -21,17 +23,24 @@ import {
   UserCheck,
   Sparkles,
   Clock,
+  Star,
+  Users,
+  MessageSquare,
 } from 'lucide-react-native'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import { api } from '@/lib/api'
+import { useAuthStore } from '@/lib/auth'
+import { SideDrawer } from '@/components/navigation/SideDrawer'
 import { Colors, Radius, Shadows } from '@/constants/theme'
 
-type TabType = 'conversations' | 'requests'
+type TabType = 'all' | 'subscribers' | 'fans' | 'requests'
 
 export default function CreatorMessagesScreen() {
   const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState<TabType>('conversations')
+  const { user } = useAuthStore()
+  const [drawerVisible, setDrawerVisible] = useState(false)
+  const [activeTab, setActiveTab] = useState<TabType>('all')
   const [refreshing, setRefreshing] = useState(false)
   const [actingId, setActingId] = useState<string | null>(null)
 
@@ -100,56 +109,140 @@ export default function CreatorMessagesScreen() {
     },
   })
 
-  const conversations = convData ?? []
+  const allConversations = convData ?? []
   const requests = reqData ?? []
   const pendingCount = requests.length
+
+  const filteredConversations = useMemo(() => {
+    if (activeTab === 'subscribers') {
+      return allConversations.filter((c: any) => c.isSubscribed || c.subscriber?.isSubscribed)
+    }
+    if (activeTab === 'fans') {
+      return allConversations.filter((c: any) => !c.isSubscribed && !c.subscriber?.isSubscribed)
+    }
+    return allConversations
+  }, [allConversations, activeTab])
 
   return (
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* Header */}
+      {/* ── Top Header (Hamburger, Messages, Bell, Avatar) ── */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Fan Messages</Text>
-      </View>
+        <TouchableOpacity
+          style={styles.menuBtn}
+          onPress={() => setDrawerVisible(true)}
+          activeOpacity={0.7}
+        >
+          <Menu size={22} color="#1A202C" />
+        </TouchableOpacity>
 
-      {/* ── Sub-Header Segmented Tabs ── */}
-      <View style={styles.tabContainer}>
-        <View style={styles.tabBar}>
+        <Text style={styles.headerTitle}>Messages</Text>
+
+        <View style={styles.headerRight}>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'conversations' && styles.tabActive]}
-            onPress={() => setActiveTab('conversations')}
-            activeOpacity={0.8}
+            style={styles.bellBtn}
+            onPress={() => router.push('/(fan)/notifications' as any)}
+            activeOpacity={0.7}
           >
-            <MessageCircle
-              size={16}
-              color={activeTab === 'conversations' ? Colors.primary : '#718096'}
-              strokeWidth={activeTab === 'conversations' ? 2.3 : 1.8}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'conversations' && styles.tabTextActive,
-              ]}
-            >
-              Conversations
-            </Text>
+            <Bell size={20} color="#1A202C" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'requests' && styles.tabActive]}
+            style={styles.avatarBtn}
+            onPress={() => setDrawerVisible(true)}
+            activeOpacity={0.8}
+          >
+            {user?.image ? (
+              <Image source={{ uri: user.image }} style={styles.headerAvatar} />
+            ) : (
+              <View style={styles.headerAvatarFallback}>
+                <Text style={styles.avatarInitial}>
+                  {(user?.name || 'C')[0].toUpperCase()}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* ── Sub-Header Filter Pills (All, Subscribers, Fans, Requests) ── */}
+      <View style={styles.tabContainer}>
+        <View style={styles.tabBar}>
+          {/* 1. All */}
+          <TouchableOpacity
+            style={[styles.tabPill, activeTab === 'all' && styles.tabPillActive]}
+            onPress={() => setActiveTab('all')}
+            activeOpacity={0.8}
+          >
+            <MessageCircle
+              size={14}
+              color={activeTab === 'all' ? '#EA580C' : '#64748B'}
+            />
+            <Text
+              style={[
+                styles.tabPillText,
+                activeTab === 'all' && styles.tabPillTextActive,
+              ]}
+            >
+              All
+            </Text>
+          </TouchableOpacity>
+
+          {/* 2. Subscribers */}
+          <TouchableOpacity
+            style={[styles.tabPill, activeTab === 'subscribers' && styles.tabPillActive]}
+            onPress={() => setActiveTab('subscribers')}
+            activeOpacity={0.8}
+          >
+            <Star
+              size={13}
+              color={activeTab === 'subscribers' ? '#EA580C' : '#64748B'}
+            />
+            <Text
+              style={[
+                styles.tabPillText,
+                activeTab === 'subscribers' && styles.tabPillTextActive,
+              ]}
+            >
+              Subscribers
+            </Text>
+          </TouchableOpacity>
+
+          {/* 3. Fans */}
+          <TouchableOpacity
+            style={[styles.tabPill, activeTab === 'fans' && styles.tabPillActive]}
+            onPress={() => setActiveTab('fans')}
+            activeOpacity={0.8}
+          >
+            <Users
+              size={13}
+              color={activeTab === 'fans' ? '#EA580C' : '#64748B'}
+            />
+            <Text
+              style={[
+                styles.tabPillText,
+                activeTab === 'fans' && styles.tabPillTextActive,
+              ]}
+            >
+              Fans
+            </Text>
+          </TouchableOpacity>
+
+          {/* 4. Requests */}
+          <TouchableOpacity
+            style={[styles.tabPill, activeTab === 'requests' && styles.tabPillActive]}
             onPress={() => setActiveTab('requests')}
             activeOpacity={0.8}
           >
             <Mail
-              size={16}
-              color={activeTab === 'requests' ? Colors.primary : '#718096'}
-              strokeWidth={activeTab === 'requests' ? 2.3 : 1.8}
+              size={13}
+              color={activeTab === 'requests' ? '#EA580C' : '#64748B'}
             />
             <Text
               style={[
-                styles.tabText,
-                activeTab === 'requests' && styles.tabTextActive,
+                styles.tabPillText,
+                activeTab === 'requests' && styles.tabPillTextActive,
               ]}
             >
               Requests
@@ -163,7 +256,7 @@ export default function CreatorMessagesScreen() {
         </View>
       </View>
 
-      {/* ── Main Tab Content ── */}
+      {/* ── Main Content ── */}
       {activeTab === 'requests' ? (
         /* Requests Tab */
         loadingReqs && !refreshing ? (
@@ -201,7 +294,6 @@ export default function CreatorMessagesScreen() {
 
               return (
                 <View style={styles.requestCard}>
-                  {/* Top user row */}
                   <View style={styles.reqTopRow}>
                     <View style={styles.avatarWrap}>
                       {item.fromUser?.image ? (
@@ -228,12 +320,10 @@ export default function CreatorMessagesScreen() {
                     <Text style={styles.reqTime}>{timeStr}</Text>
                   </View>
 
-                  {/* Message body */}
                   <View style={styles.messageBox}>
                     <Text style={styles.messageText}>{item.message}</Text>
                   </View>
 
-                  {/* Action buttons (Accept / Decline) */}
                   <View style={styles.reqActions}>
                     <TouchableOpacity
                       style={styles.declineBtn}
@@ -283,7 +373,7 @@ export default function CreatorMessagesScreen() {
           />
         )
       ) : (
-        /* Conversations Tab */
+        /* Conversations List */
         loadingConvs && !refreshing ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={Colors.primary} />
@@ -291,7 +381,7 @@ export default function CreatorMessagesScreen() {
           </View>
         ) : (
           <FlatList
-            data={conversations}
+            data={filteredConversations}
             keyExtractor={(item) => item.id}
             refreshControl={
               <RefreshControl
@@ -302,14 +392,17 @@ export default function CreatorMessagesScreen() {
               />
             }
             contentContainerStyle={
-              conversations.length === 0 ? styles.emptyBox : styles.listContent
+              filteredConversations.length === 0 ? styles.emptyBox : styles.listContent
             }
             renderItem={({ item }) => {
-              const other = item.subscriber || item.otherUser
+              const other = item.subscriber || item.otherUser || item.creator
               const name =
+                other?.displayName ||
                 [other?.firstName, other?.lastName].filter(Boolean).join(' ') ||
                 other?.name ||
+                other?.username ||
                 'Fan'
+              const imgUrl = other?.image || other?.user?.image
               const lastMsg =
                 item.messages?.[0]?.content || item.lastMessageText || 'Direct message'
               const timeStr = item.lastMessageAt
@@ -328,8 +421,8 @@ export default function CreatorMessagesScreen() {
                   activeOpacity={0.8}
                 >
                   <View style={styles.avatarWrap}>
-                    {other?.image ? (
-                      <Image source={{ uri: other.image }} style={styles.avatar} />
+                    {imgUrl ? (
+                      <Image source={{ uri: imgUrl }} style={styles.avatar} />
                     ) : (
                       <View style={styles.avatarFallback}>
                         <Text style={styles.avatarInitial}>
@@ -355,19 +448,30 @@ export default function CreatorMessagesScreen() {
             }}
             ListEmptyComponent={
               <View style={styles.emptyWrap}>
-                <View style={styles.emptyIconBox}>
-                  <MessageCircle size={36} color={Colors.primary} />
+                <Text style={styles.emptyTopLabel}>No conversations yet</Text>
+                <Text style={styles.emptyTopSub}>Messages from fans will appear here</Text>
+
+                <View style={styles.emptyCenterCard}>
+                  <View style={styles.emptySpeechBubble}>
+                    <MessageSquare size={38} color="#CBD5E1" strokeWidth={1.5} />
+                  </View>
+                  <Text style={styles.emptySelectTitle}>Select a conversation</Text>
+                  <Text style={styles.emptySelectSub}>
+                    Choose a conversation from the sidebar to start messaging.
+                  </Text>
                 </View>
-                <Text style={styles.emptyTitle}>No conversations yet</Text>
-                <Text style={styles.emptySub}>
-                  Direct messages and interactions with your subscribers will appear here.
-                </Text>
               </View>
             }
             showsVerticalScrollIndicator={false}
           />
         )
       )}
+
+      {/* ── Side Navigation Drawer ── */}
+      <SideDrawer
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+      />
     </View>
   )
 }
@@ -375,65 +479,108 @@ export default function CreatorMessagesScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F7F5F2',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     paddingTop: 52,
     paddingBottom: 14,
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     backgroundColor: '#FFFFFF',
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#1A202C',
-    letterSpacing: -0.3,
-  },
-  tabContainer: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#EBE7E0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  menuBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A202C',
+    letterSpacing: -0.2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  bellBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  avatarBtn: {
+    position: 'relative',
+  },
+  headerAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+  },
+  headerAvatarFallback: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#FDEEE9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  /* Tab Container */
+  tabContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#EFECE6',
-    borderRadius: 12,
-    padding: 3.5,
+    gap: 8,
   },
-  tab: {
-    flex: 1,
+  tabPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 9,
-    gap: 6,
-    position: 'relative',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
+    gap: 5,
   },
-  tabActive: {
-    backgroundColor: '#FFFFFF',
-    ...Shadows.sm,
+  tabPillActive: {
+    backgroundColor: '#FFF7ED',
   },
-  tabText: {
-    fontSize: 13,
+  tabPillText: {
+    fontSize: 12.5,
     fontWeight: '600',
-    color: '#718096',
+    color: '#64748B',
   },
-  tabTextActive: {
-    color: '#1A202C',
+  tabPillTextActive: {
+    color: '#EA580C',
     fontWeight: '700',
   },
   countBadge: {
     backgroundColor: '#EF4444',
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: Radius.full,
-    marginLeft: 2,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 8,
   },
   countBadgeText: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -453,19 +600,16 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     gap: 12,
   },
-  /* Request Card */
-  requestCard: {
+  /* Conversation Card */
+  convCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
     padding: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#EAE5DE',
     ...Shadows.sm,
-  },
-  reqTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
   },
   avatarWrap: {
     marginRight: 10,
@@ -484,10 +628,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarInitial: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: Colors.primary,
+  convTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
   },
   fanName: {
     fontSize: 15,
@@ -502,6 +647,24 @@ const styles = StyleSheet.create({
   reqTime: {
     fontSize: 11.5,
     color: '#A0AEC0',
+  },
+  lastMsg: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  /* Request Card */
+  requestCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#EAE5DE',
+    ...Shadows.sm,
+  },
+  reqTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   messageBox: {
     backgroundColor: '#F8FAFC',
@@ -548,39 +711,48 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  /* Conversation Card */
-  convCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#EAE5DE',
-    ...Shadows.sm,
-  },
-  convTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  lastMsg: {
-    fontSize: 13,
-    color: '#64748B',
-  },
-  /* Empty States */
+  /* Empty States matching screenshot */
   emptyBox: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 80,
+    paddingHorizontal: 24,
+    paddingTop: 32,
   },
   emptyWrap: {
     alignItems: 'center',
+    width: '100%',
+  },
+  emptyTopLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 4,
+  },
+  emptyTopSub: {
+    fontSize: 13,
+    color: '#94A3B8',
+    marginBottom: 80,
+  },
+  emptyCenterCard: {
+    alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
+  },
+  emptySpeechBubble: {
+    marginBottom: 16,
+  },
+  emptySelectTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 6,
+  },
+  emptySelectSub: {
+    fontSize: 13,
+    color: '#94A3B8',
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 240,
   },
   emptyIconBox: {
     width: 68,
