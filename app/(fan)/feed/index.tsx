@@ -25,6 +25,7 @@ import {
 import { api } from '@/lib/api'
 import PostCard from '@/components/feed/PostCard'
 import { LiveStreamCard, LiveStream } from '@/components/feed/LiveStreamCard'
+import { MembershipModal } from '@/components/membership/MembershipModal'
 import { Loader } from '@/components/Loader'
 import { Colors, Radius, Shadows } from '@/constants/theme'
 
@@ -62,6 +63,7 @@ export default function FeedScreen() {
   const [activeTab, setActiveTab] = useState<TopTab>('feed')
   const [activeCategory, setActiveCategory] = useState('ALL')
   const [refreshing, setRefreshing] = useState(false)
+  const [membershipModalVisible, setMembershipModalVisible] = useState(false)
 
   // Posts Feed query
   const { data: feedData, isLoading: loadingFeed } = useQuery({
@@ -77,6 +79,18 @@ export default function FeedScreen() {
     refetchInterval: activeTab === 'live' ? 5000 : false, // Poll every 5s on live tab
     enabled: activeTab === 'live',
   })
+
+  // Membership status query
+  const { data: membershipData } = useQuery({
+    queryKey: ['membershipStatus'],
+    queryFn: async () => {
+      const res = await api.get('/subscription/membership/status')
+      return res.data
+    },
+  })
+
+  const isPaidMember = membershipData?.isPaidMember ?? false
+
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -282,21 +296,46 @@ export default function FeedScreen() {
             contentContainerStyle={
               posts.length === 0 ? styles.emptyListContainer : styles.listContent
             }
-            ListEmptyComponent={
-              <View style={styles.emptyStateContainer}>
-                <Text style={styles.emptyTitle}>No posts yet in this category.</Text>
-                <Text style={styles.emptySubtitle}>
-                  Follow more creators to fill your feed.
-                </Text>
-              </View>
+            ListFooterComponent={
+              !isPaidMember && posts.length > 0 ? (
+                <TouchableOpacity
+                  style={styles.upgradeCard}
+                  onPress={() => setMembershipModalVisible(true)}
+                  activeOpacity={0.9}
+                >
+                  <View style={styles.upgradeCardLeft}>
+                    <View style={styles.upgradeSparkleBox}>
+                      <Sparkles size={20} color="#EA580C" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.upgradeCardTitle}>
+                        Join NESORA Plus · ₦5,000/mo
+                      </Text>
+                      <Text style={styles.upgradeCardSub}>
+                        Unlock unlimited creator feeds, HD videos, and live broadcasts.
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.upgradePill}>
+                    <Text style={styles.upgradePillText}>Upgrade</Text>
+                  </View>
+                </TouchableOpacity>
+              ) : null
             }
             showsVerticalScrollIndicator={false}
           />
         )
       )}
+
+      {/* ── NESORA Plus Membership Modal ── */}
+      <MembershipModal
+        visible={membershipModalVisible}
+        onClose={() => setMembershipModalVisible(false)}
+      />
     </View>
   )
 }
+
 
 
 const styles = StyleSheet.create({
@@ -497,4 +536,56 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
+  /* ── Membership Upgrade Card ── */
+  upgradeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1.5,
+    borderColor: '#FED7AA',
+    borderRadius: 16,
+    padding: 14,
+    marginTop: 8,
+    marginBottom: 20,
+    ...Shadows.sm,
+  },
+  upgradeCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    marginRight: 10,
+  },
+  upgradeSparkleBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FDEEE9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  upgradeCardTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#1A202C',
+  },
+  upgradeCardSub: {
+    fontSize: 11.5,
+    color: '#9A3412',
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  upgradePill: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+  },
+  upgradePillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
 })
+

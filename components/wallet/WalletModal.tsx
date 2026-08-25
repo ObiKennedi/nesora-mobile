@@ -1,18 +1,18 @@
-// app/(fan)/create.tsx — Center (+) Action Button: "My Wallet" & Funding Sheet matching screenshot
+// components/wallet/WalletModal.tsx — "My Wallet" modal matching user screenshot
 import React, { useState } from 'react'
 import {
   View,
   Text,
+  Modal,
   TouchableOpacity,
   TextInput,
   StyleSheet,
   ActivityIndicator,
   ScrollView,
+  FlatList,
   Alert,
   Linking,
-  StatusBar,
 } from 'react-native'
-import { router } from 'expo-router'
 import {
   Wallet as WalletIcon,
   X,
@@ -21,7 +21,6 @@ import {
   ArrowDownLeft,
   CheckCircle2,
   ExternalLink,
-  Sparkles,
 } from 'lucide-react-native'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
@@ -30,19 +29,25 @@ import { Colors, Radius, Shadows } from '@/constants/theme'
 
 const TOPUP_PRESETS = [1000, 2000, 5000, 10000]
 
-export default function WalletFundingScreen() {
+interface WalletModalProps {
+  visible: boolean
+  onClose: () => void
+}
+
+export function WalletModal({ visible, onClose }: WalletModalProps) {
   const queryClient = useQueryClient()
   const [isTopUpOpen, setIsTopUpOpen] = useState(false)
   const [amount, setAmount] = useState('2000')
   const [pendingRef, setPendingRef] = useState<string | null>(null)
 
-  // Fetch Wallet Balance & Recent Transactions
+  // Fetch Wallet balance & recent transactions
   const { data: balanceData, isLoading: loadingBalance, refetch: refetchBalance } = useQuery({
     queryKey: ['walletBalance'],
     queryFn: async () => {
       const res = await api.get('/wallet')
       return res.data
     },
+    enabled: visible,
   })
 
   const { data: txData, isLoading: loadingTx, refetch: refetchTx } = useQuery({
@@ -51,6 +56,7 @@ export default function WalletFundingScreen() {
       const res = await api.get('/wallet/transactions', { params: { limit: 10 } })
       return res.data
     },
+    enabled: visible,
   })
 
   // Paystack Initialize Mutation
@@ -62,11 +68,12 @@ export default function WalletFundingScreen() {
     onSuccess: async (data) => {
       if (data?.authorizationUrl) {
         setPendingRef(data.reference)
+        // Open Paystack checkout in browser
         const supported = await Linking.canOpenURL(data.authorizationUrl)
         if (supported) {
           await Linking.openURL(data.authorizationUrl)
         } else {
-          Alert.alert('Payment Link', `Open this link: ${data.authorizationUrl}`)
+          Alert.alert('Payment Link', `Open this link to complete payment: ${data.authorizationUrl}`)
         }
       } else if (data?.error) {
         Alert.alert('Top Up Failed', data.error)
@@ -114,208 +121,206 @@ export default function WalletFundingScreen() {
   const balance = balanceData?.balance ?? 0
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.backdrop} />
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.sheetContainer}>
+          {/* Grab Handle */}
+          <View style={styles.grabHandle} />
 
-      <View style={styles.card}>
-        {/* Grab Handle */}
-        <View style={styles.grabHandle} />
-
-        {/* Header (Matches Screenshot) */}
-        <View style={styles.header}>
-          <View style={styles.headerTitleRow}>
-            <View style={styles.walletIconWrap}>
-              <WalletIcon size={18} color="#D97706" />
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerTitleRow}>
+              <View style={styles.walletIconWrap}>
+                <WalletIcon size={18} color="#D97706" />
+              </View>
+              <Text style={styles.headerTitle}>My Wallet</Text>
             </View>
-            <Text style={styles.headerTitle}>My Wallet</Text>
-          </View>
-          <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn} activeOpacity={0.7}>
-            <X size={18} color="#718096" />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }}>
-          {/* ── Balance Card (Matches Screenshot Dark Brown/Black) ── */}
-          <View style={styles.balanceCard}>
-            <Text style={styles.balanceLabel}>AVAILABLE BALANCE</Text>
-            <Text style={styles.balanceValue}>
-              ₦{loadingBalance ? '...' : balance.toLocaleString()}
-            </Text>
-
-            <TouchableOpacity
-              style={styles.topUpBtn}
-              onPress={() => setIsTopUpOpen(!isTopUpOpen)}
-              activeOpacity={0.85}
-            >
-              <Plus size={15} color="#EA580C" strokeWidth={2.5} style={{ marginRight: 6 }} />
-              <Text style={styles.topUpBtnText}>
-                {isTopUpOpen ? 'Hide top up' : 'Top up wallet'}
-              </Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
+              <X size={18} color="#718096" />
             </TouchableOpacity>
           </View>
 
-          {/* ── Top Up Form (Expandable) ── */}
-          {isTopUpOpen && (
-            <View style={styles.topUpFormCard}>
-              <Text style={styles.formTitle}>Select or Enter Amount</Text>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+            {/* ── Balance Card (Matches Screenshot Dark Brown/Black) ── */}
+            <View style={styles.balanceCard}>
+              <Text style={styles.balanceLabel}>AVAILABLE BALANCE</Text>
+              <Text style={styles.balanceValue}>
+                ₦{loadingBalance ? '...' : balance.toLocaleString()}
+              </Text>
 
-              {/* Preset Pills */}
-              <View style={styles.presetsRow}>
-                {TOPUP_PRESETS.map((preset) => (
-                  <TouchableOpacity
-                    key={preset}
-                    style={[
-                      styles.presetPill,
-                      amount === String(preset) && styles.presetPillActive,
-                    ]}
-                    onPress={() => setAmount(String(preset))}
-                    activeOpacity={0.8}
-                  >
-                    <Text
-                      style={[
-                        styles.presetPillText,
-                        amount === String(preset) && styles.presetPillTextActive,
-                      ]}
-                    >
-                      ₦{preset.toLocaleString()}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* Custom Amount Input */}
-              <View style={styles.inputWrap}>
-                <Text style={styles.currencySymbol}>₦</Text>
-                <TextInput
-                  style={styles.amountInput}
-                  keyboardType="numeric"
-                  placeholder="Enter amount (min ₦100)"
-                  placeholderTextColor="#A0AEC0"
-                  value={amount}
-                  onChangeText={setAmount}
-                />
-              </View>
-
-              {/* Pay with Paystack Button */}
               <TouchableOpacity
-                style={[
-                  styles.payBtn,
-                  (!amount || initMutation.isPending) && styles.payBtnDisabled,
-                ]}
-                onPress={handleTopUpSubmit}
-                disabled={!amount || initMutation.isPending}
+                style={styles.topUpBtn}
+                onPress={() => setIsTopUpOpen(!isTopUpOpen)}
                 activeOpacity={0.85}
               >
-                {initMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <ExternalLink size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.payBtnText}>Pay with Paystack</Text>
-                  </>
-                )}
+                <Plus size={15} color="#FFFFFF" strokeWidth={2.5} style={{ marginRight: 6 }} />
+                <Text style={styles.topUpBtnText}>
+                  {isTopUpOpen ? 'Hide top up' : 'Top up wallet'}
+                </Text>
               </TouchableOpacity>
+            </View>
 
-              {/* If payment was launched in browser, show verify button */}
-              {pendingRef && (
+            {/* ── Top Up Form (Expandable) ── */}
+            {isTopUpOpen && (
+              <View style={styles.topUpFormCard}>
+                <Text style={styles.formTitle}>Select or Enter Amount</Text>
+
+                {/* Preset Pills */}
+                <View style={styles.presetsRow}>
+                  {TOPUP_PRESETS.map((preset) => (
+                    <TouchableOpacity
+                      key={preset}
+                      style={[
+                        styles.presetPill,
+                        amount === String(preset) && styles.presetPillActive,
+                      ]}
+                      onPress={() => setAmount(String(preset))}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          styles.presetPillText,
+                          amount === String(preset) && styles.presetPillTextActive,
+                        ]}
+                      >
+                        ₦{preset.toLocaleString()}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Custom Amount Input */}
+                <View style={styles.inputWrap}>
+                  <Text style={styles.currencySymbol}>₦</Text>
+                  <TextInput
+                    style={styles.amountInput}
+                    keyboardType="numeric"
+                    placeholder="Enter amount (min ₦100)"
+                    placeholderTextColor="#A0AEC0"
+                    value={amount}
+                    onChangeText={setAmount}
+                  />
+                </View>
+
+                {/* Pay with Paystack Button */}
                 <TouchableOpacity
-                  style={styles.verifyBtn}
-                  onPress={() => verifyMutation.mutate(pendingRef)}
-                  disabled={verifyMutation.isPending}
+                  style={[
+                    styles.payBtn,
+                    (!amount || initMutation.isPending) && styles.payBtnDisabled,
+                  ]}
+                  onPress={handleTopUpSubmit}
+                  disabled={!amount || initMutation.isPending}
                   activeOpacity={0.85}
                 >
-                  {verifyMutation.isPending ? (
-                    <ActivityIndicator size="small" color={Colors.primary} />
+                  {initMutation.isPending ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
                     <>
-                      <CheckCircle2 size={16} color={Colors.primary} style={{ marginRight: 6 }} />
-                      <Text style={styles.verifyBtnText}>I've Completed the Payment</Text>
+                      <ExternalLink size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
+                      <Text style={styles.payBtnText}>Pay with Paystack</Text>
                     </>
                   )}
                 </TouchableOpacity>
-              )}
+
+                {/* If payment was launched in browser, show verify button */}
+                {pendingRef && (
+                  <TouchableOpacity
+                    style={styles.verifyBtn}
+                    onPress={() => verifyMutation.mutate(pendingRef)}
+                    disabled={verifyMutation.isPending}
+                    activeOpacity={0.85}
+                  >
+                    {verifyMutation.isPending ? (
+                      <ActivityIndicator size="small" color={Colors.primary} />
+                    ) : (
+                      <>
+                        <CheckCircle2 size={16} color={Colors.primary} style={{ marginRight: 6 }} />
+                        <Text style={styles.verifyBtnText}>I've Completed the Payment</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {/* ── Recent Transactions Section ── */}
+            <View style={styles.transactionsHeader}>
+              <Text style={styles.sectionTitle}>Recent Transactions</Text>
             </View>
-          )}
 
-          {/* ── Recent Transactions Section (Matches Screenshot) ── */}
-          <View style={styles.transactionsHeader}>
-            <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <TouchableOpacity onPress={() => {}} activeOpacity={0.7}>
-              <Text style={styles.seeAllText}>See all →</Text>
-            </TouchableOpacity>
-          </View>
+            {loadingTx ? (
+              <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 20 }} />
+            ) : transactions.length === 0 ? (
+              <View style={styles.emptyTx}>
+                <Text style={styles.emptyTxText}>No transactions yet</Text>
+              </View>
+            ) : (
+              <View style={styles.txList}>
+                {transactions.map((tx: any) => {
+                  const isDeposit = tx.type === 'DEPOSIT' || tx.type === 'REFUND'
+                  const dateStr = tx.createdAt
+                    ? formatDistanceToNow(new Date(tx.createdAt), { addSuffix: true })
+                    : ''
 
-          {loadingTx ? (
-            <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 20 }} />
-          ) : transactions.length === 0 ? (
-            <View style={styles.emptyTx}>
-              <Text style={styles.emptyTxText}>No transactions yet</Text>
-            </View>
-          ) : (
-            <View style={styles.txList}>
-              {transactions.map((tx: any) => {
-                const isDeposit = tx.type === 'DEPOSIT' || tx.type === 'REFUND'
-                const dateStr = tx.createdAt
-                  ? formatDistanceToNow(new Date(tx.createdAt), { addSuffix: true })
-                  : ''
+                  return (
+                    <View key={tx.id} style={styles.txItem}>
+                      <View style={styles.txLeft}>
+                        <View
+                          style={[
+                            styles.txIconWrap,
+                            isDeposit ? styles.txDepositWrap : styles.txDebitWrap,
+                          ]}
+                        >
+                          {isDeposit ? (
+                            <ArrowDownLeft size={16} color="#10B981" />
+                          ) : (
+                            <ArrowUpRight size={16} color="#EF4444" />
+                          )}
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.txDesc} numberOfLines={1}>
+                            {tx.description || (isDeposit ? 'Deposit' : 'Payment')}
+                          </Text>
+                          <Text style={styles.txDate}>{dateStr}</Text>
+                        </View>
+                      </View>
 
-                return (
-                  <View key={tx.id} style={styles.txItem}>
-                    <View style={styles.txLeft}>
-                      <View
+                      <Text
                         style={[
-                          styles.txIconWrap,
-                          isDeposit ? styles.txDepositWrap : styles.txDebitWrap,
+                          styles.txAmount,
+                          isDeposit ? styles.txAmountDeposit : styles.txAmountDebit,
                         ]}
                       >
-                        {isDeposit ? (
-                          <ArrowDownLeft size={16} color="#10B981" />
-                        ) : (
-                          <ArrowUpRight size={16} color="#EF4444" />
-                        )}
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.txDesc} numberOfLines={1}>
-                          {tx.description || (isDeposit ? 'Deposit' : 'Payment')}
-                        </Text>
-                        <Text style={styles.txDate}>{dateStr}</Text>
-                      </View>
+                        {isDeposit ? '+' : '-'}₦{Number(tx.amount).toLocaleString()}
+                      </Text>
                     </View>
-
-                    <Text
-                      style={[
-                        styles.txAmount,
-                        isDeposit ? styles.txAmountDeposit : styles.txAmountDebit,
-                      ]}
-                    >
-                      {isDeposit ? '+' : '-'}₦{Number(tx.amount).toLocaleString()}
-                    </Text>
-                  </View>
-                )
-              })}
-            </View>
-          )}
-        </ScrollView>
+                  )
+                })}
+              </View>
+            )}
+          </ScrollView>
+        </View>
       </View>
-    </View>
+    </Modal>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  card: {
+  sheetContainer: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '92%',
+    maxHeight: '90%',
     paddingHorizontal: 20,
     paddingTop: 10,
   },
@@ -362,7 +367,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* Balance Card (Matches Screenshot Dark Brown/Black) */
+  /* Balance Card Matching Screenshot */
   balanceCard: {
     backgroundColor: '#1E1715',
     borderRadius: 18,
@@ -499,7 +504,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.primary,
   },
-  /* Transactions (Matches Screenshot) */
+  /* Transactions */
   transactionsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -511,11 +516,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#1E293B',
-  },
-  seeAllText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#EA580C',
   },
   emptyTx: {
     paddingVertical: 32,

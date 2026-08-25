@@ -75,7 +75,11 @@ export default function YouProfileScreen() {
           <ChevronRight size={18} color={Colors.textMuted} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('/(fan)/profile/wallet' as any)}
+          activeOpacity={0.7}
+        >
           <View style={styles.menuLeft}>
             <View style={[styles.menuIconWrap, { backgroundColor: '#E8F5E9' }]}>
               <Wallet size={18} color="#2E7D32" />
@@ -85,7 +89,11 @@ export default function YouProfileScreen() {
           <ChevronRight size={18} color={Colors.textMuted} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('/(fan)/profile/liked' as any)}
+          activeOpacity={0.7}
+        >
           <View style={styles.menuLeft}>
             <View style={[styles.menuIconWrap, { backgroundColor: '#FCE4EC' }]}>
               <Heart size={18} color="#C2185B" />
@@ -95,7 +103,11 @@ export default function YouProfileScreen() {
           <ChevronRight size={18} color={Colors.textMuted} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('/(fan)/profile/saved' as any)}
+          activeOpacity={0.7}
+        >
           <View style={styles.menuLeft}>
             <View style={[styles.menuIconWrap, { backgroundColor: '#EDE7F6' }]}>
               <Bookmark size={18} color="#512DA8" />
@@ -105,7 +117,11 @@ export default function YouProfileScreen() {
           <ChevronRight size={18} color={Colors.textMuted} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => router.push('/(fan)/profile/settings' as any)}
+          activeOpacity={0.7}
+        >
           <View style={styles.menuLeft}>
             <View style={[styles.menuIconWrap, { backgroundColor: '#ECEFF1' }]}>
               <Settings size={18} color="#455A64" />
