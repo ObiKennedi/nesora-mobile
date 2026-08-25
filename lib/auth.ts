@@ -25,6 +25,8 @@ type AuthState = {
   user: AuthUser | null
   isLoading: boolean
   isAuthenticated: boolean
+  activeMode: 'FAN' | 'CREATOR'
+  setActiveMode: (mode: 'FAN' | 'CREATOR') => Promise<void>
   login: (email: string, password: string) => Promise<void>
   googleLogin: (payload: {
     email: string
@@ -39,16 +41,25 @@ type AuthState = {
   setUser: (user: AuthUser) => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: true,
   isAuthenticated: false,
+  activeMode: 'FAN',
+
+  setActiveMode: async (mode) => {
+    await SecureStore.setItemAsync('activeMode', mode)
+    set({ activeMode: mode })
+  },
+
 
   login: async (email, password) => {
     const { data } = await api.post('/auth/login', { email, password })
     await SecureStore.setItemAsync('accessToken', data.accessToken)
     await SecureStore.setItemAsync('refreshToken', data.refreshToken)
-    set({ user: data.user, isAuthenticated: true })
+    const initialMode = data.user?.onboardingType === 'CREATOR' ? 'CREATOR' : 'FAN'
+    await SecureStore.setItemAsync('activeMode', initialMode)
+    set({ user: data.user, isAuthenticated: true, activeMode: initialMode })
   },
 
   googleLogin: async (payload) => {
@@ -59,7 +70,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (data.refreshToken) {
       await SecureStore.setItemAsync('refreshToken', data.refreshToken)
     }
-    set({ user: data.user, isAuthenticated: true })
+    const initialMode = data.user?.onboardingType === 'CREATOR' ? 'CREATOR' : 'FAN'
+    await SecureStore.setItemAsync('activeMode', initialMode)
+    set({ user: data.user, isAuthenticated: true, activeMode: initialMode })
     return data.user
   },
 
@@ -68,14 +81,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (data.accessToken) {
       await SecureStore.setItemAsync('accessToken', data.accessToken)
       await SecureStore.setItemAsync('refreshToken', data.refreshToken)
-      set({ user: data.user, isAuthenticated: true })
+      set({ user: data.user, isAuthenticated: true, activeMode: 'FAN' })
     }
   },
 
   logout: async () => {
     await SecureStore.deleteItemAsync('accessToken')
     await SecureStore.deleteItemAsync('refreshToken')
-    set({ user: null, isAuthenticated: false })
+    await SecureStore.deleteItemAsync('activeMode')
+    set({ user: null, isAuthenticated: false, activeMode: 'FAN' })
   },
 
   checkAuth: async () => {
@@ -86,7 +100,17 @@ export const useAuthStore = create<AuthState>((set) => ({
         return
       }
       const { data } = await api.get('/auth/me')
-      set({ user: data, isAuthenticated: true, isLoading: false })
+      const storedMode = await SecureStore.getItemAsync('activeMode')
+      const resolvedMode = (storedMode === 'CREATOR' || storedMode === 'FAN')
+        ? storedMode
+        : (data.onboardingType === 'CREATOR' ? 'CREATOR' : 'FAN')
+
+      set({
+        user: data,
+        isAuthenticated: true,
+        isLoading: false,
+        activeMode: resolvedMode,
+      })
     } catch {
       set({ user: null, isAuthenticated: false, isLoading: false })
     }
@@ -94,3 +118,4 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setUser: (user) => set({ user }),
 }))
+

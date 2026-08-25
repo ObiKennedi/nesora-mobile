@@ -52,10 +52,10 @@ type Props = {
 }
 
 export function SideDrawer({ visible, onClose }: Props) {
-  const { user, logout } = useAuthStore()
+  const { user, logout, activeMode, setActiveMode } = useAuthStore()
   const pathname = usePathname()
 
-  const isCreator = user?.onboardingType === 'CREATOR'
+  const isCreatorMode = activeMode === 'CREATOR'
 
   // Expandable sections for Creator Drawer
   const [contentExpanded, setContentExpanded] = useState(true)
@@ -64,9 +64,9 @@ export function SideDrawer({ visible, onClose }: Props) {
 
   // Fetch wallet balance
   const { data: walletData } = useQuery({
-    queryKey: [isCreator ? 'creatorWalletBalance' : 'walletBalance'],
+    queryKey: [isCreatorMode ? 'creatorWalletBalance' : 'walletBalance'],
     queryFn: async () => {
-      const res = await api.get(isCreator ? '/wallet/creator/balance' : '/wallet')
+      const res = await api.get(isCreatorMode ? '/wallet/creator/balance' : '/wallet')
       return res.data
     },
     enabled: visible,
@@ -79,8 +79,9 @@ export function SideDrawer({ visible, onClose }: Props) {
       const res = await api.get('/subscription/membership/status')
       return res.data
     },
-    enabled: visible && !isCreator,
+    enabled: visible && !isCreatorMode,
   })
+
 
   const isPaidMember = membershipData?.isPaidMember ?? false
 
@@ -125,8 +126,9 @@ export function SideDrawer({ visible, onClose }: Props) {
         {/* ════════════════════════════════════════════════════════════════════
             CREATOR SIDE DRAWER (DARK SLEEK THEME — MATCHING SCREENSHOT)
         ════════════════════════════════════════════════════════════════════ */}
-        {isCreator ? (
+        {isCreatorMode ? (
           <View style={styles.creatorDrawer}>
+
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.creatorScroll}
@@ -411,6 +413,22 @@ export function SideDrawer({ visible, onClose }: Props) {
                 </TouchableOpacity>
               </View>
 
+              {/* ── Switch to Fan Mode ── */}
+              <TouchableOpacity
+                style={styles.cSwitchBtn}
+                onPress={async () => {
+                  await setActiveMode('FAN')
+                  onClose()
+                  setTimeout(() => {
+                    router.replace('/(fan)/feed')
+                  }, 150)
+                }}
+                activeOpacity={0.8}
+              >
+                <ArrowRightLeft size={17} color="#A1A1AA" />
+                <Text style={styles.cSwitchText}>Switch to Fan View</Text>
+              </TouchableOpacity>
+
               {/* ── Sign Out ── */}
               <TouchableOpacity
                 style={styles.cSignOutBtn}
@@ -422,6 +440,7 @@ export function SideDrawer({ visible, onClose }: Props) {
               </TouchableOpacity>
             </ScrollView>
           </View>
+
         ) : (
           /* ════════════════════════════════════════════════════════════════════
               FAN SIDE DRAWER (LIGHT THEME)
@@ -568,20 +587,46 @@ export function SideDrawer({ visible, onClose }: Props) {
 
               <View style={styles.divider} />
 
-              <TouchableOpacity
-                style={styles.fanMenuItem}
-                onPress={() => navigateTo('/(onboarding)/select-type')}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.fanMenuIconWrap, { backgroundColor: '#FEF3C7' }]}>
-                  <ArrowRightLeft size={18} color="#B45309" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fanMenuLabel}>Switch to Creator Portal</Text>
-                  <Text style={styles.fanMenuSub}>Change account experience</Text>
-                </View>
-                <ChevronRight size={17} color="#94A3B8" />
-              </TouchableOpacity>
+              {user?.onboardingType === 'CREATOR' ? (
+                <TouchableOpacity
+                  style={styles.fanMenuItem}
+                  onPress={async () => {
+                    await setActiveMode('CREATOR')
+                    onClose()
+                    setTimeout(() => {
+                      router.replace('/(creator)/dashboard' as any)
+                    }, 150)
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.fanMenuIconWrap, { backgroundColor: '#FFF7ED' }]}>
+                    <Sparkles size={18} color="#EA580C" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.fanMenuLabel, { color: '#EA580C', fontWeight: '700' }]}>
+                      Switch to Creator Mode
+                    </Text>
+                    <Text style={styles.fanMenuSub}>Manage content & studio</Text>
+                  </View>
+                  <ChevronRight size={17} color="#EA580C" />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.fanMenuItem}
+                  onPress={() => navigateTo('/(onboarding)/select-type')}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.fanMenuIconWrap, { backgroundColor: '#FEF3C7' }]}>
+                    <ArrowRightLeft size={18} color="#B45309" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.fanMenuLabel}>Become a Creator</Text>
+                    <Text style={styles.fanMenuSub}>Set up your creator profile</Text>
+                  </View>
+                  <ChevronRight size={17} color="#94A3B8" />
+                </TouchableOpacity>
+              )}
+
 
               <TouchableOpacity
                 style={[styles.fanMenuItem, { marginTop: 8 }]}
@@ -725,16 +770,34 @@ const styles = StyleSheet.create({
     color: '#A1A1AA',
     fontWeight: '500',
   },
+  cSwitchBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginTop: 20,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2E2E2E',
+  },
+  cSwitchText: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#E4E4E7',
+  },
   cSignOutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     paddingVertical: 14,
     paddingHorizontal: 12,
-    marginTop: 24,
+    marginTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#222222',
   },
+
   cSignOutText: {
     fontSize: 14,
     fontWeight: '600',

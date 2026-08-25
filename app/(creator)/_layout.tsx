@@ -117,7 +117,16 @@ export default function CreatorTabLayout() {
           ),
         }}
       />
+
+      {/* ── Hidden Stack Screens (Available from Side Drawer only) ── */}
+      <Tabs.Screen
+        name="calls/index"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
+
   )
 }
 

@@ -10,7 +10,7 @@ import { useAuthStore } from '@/lib/auth'
 import { registerPushToken, setupPushListeners } from '@/lib/push'
 
 export default function RootLayout() {
-  const { checkAuth, isLoading, isAuthenticated, user } = useAuthStore()
+  const { checkAuth, isLoading, isAuthenticated, user, activeMode } = useAuthStore()
 
   useEffect(() => {
     checkAuth()
@@ -23,12 +23,13 @@ export default function RootLayout() {
       router.replace('/(auth)/login')
     } else if (!user?.onboardingType) {
       router.replace('/(onboarding)/select-type')
-    } else if (user?.onboardingType === 'CREATOR') {
+    } else if (activeMode === 'CREATOR' || user?.onboardingType === 'CREATOR') {
       router.replace('/(creator)/dashboard' as any)
     } else {
       router.replace('/(fan)/feed')
     }
-  }, [isLoading, isAuthenticated, user])
+  }, [isLoading, isAuthenticated])
+
 
   useEffect(() => {
     if (!isAuthenticated) return

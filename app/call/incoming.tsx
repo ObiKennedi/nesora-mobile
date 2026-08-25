@@ -28,8 +28,20 @@ export default function IncomingCallScreen() {
 
   const acceptCall = async () => {
     try {
-      await api.post(`/calls/${callId}/accept`).catch(() => {})
-    } finally {
+      const res = await api.post(`/calls/${callId}/respond`, { accept: true })
+      const data = res.data
+      router.replace({
+        pathname: '/call/active',
+        params: {
+          callId,
+          roomUrl: data.dailyRoomUrl || roomUrl,
+          roomToken: data.token || roomToken,
+          callType: callType || 'VOICE',
+          name: displayName,
+          avatar: callerAvatar || '',
+        },
+      })
+    } catch (err: any) {
       router.replace({
         pathname: '/call/active',
         params: {
@@ -46,11 +58,12 @@ export default function IncomingCallScreen() {
 
   const rejectCall = async () => {
     try {
-      await api.post(`/calls/${callId}/reject`).catch(() => {})
+      await api.post(`/calls/${callId}/respond`, { accept: false }).catch(() => {})
     } finally {
       router.back()
     }
   }
+
 
   return (
     <View style={styles.container}>

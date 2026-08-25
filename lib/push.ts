@@ -63,7 +63,7 @@ export async function registerPushToken() {
   }
 
   const tokenData = await Notifications.getExpoPushTokenAsync({
-    projectId: '3ceec72d-ae49-4814-a86d-e1e2b5a79b13',
+    projectId: '1fe332b9-dc07-4e06-9786-b9c1aca3af12',
   })
 
   try {
@@ -83,16 +83,28 @@ export function setupPushListeners() {
 
     switch (data?.type) {
       case 'INCOMING_CALL':
-        router.push({ pathname: '/call/incoming', params: { callId: data.callId, callType: data.type, fanName: data.fan?.name, fanImage: data.fan?.image } })
+        router.push({
+          pathname: '/call/incoming',
+          params: {
+            callId: data.callId,
+            callType: data.callType || data.type || 'VOICE',
+            callerName: data.fan?.name || 'Fan Member',
+            callerAvatar: data.fan?.image || '',
+            conversationId: data.conversationId,
+          },
+        })
         break
       case 'CALL_ACCEPTED':
         router.push({ pathname: '/call/active', params: { callId: data.callId } })
         break
       case 'NEW_MESSAGE':
-        router.push({ pathname: '/messages/[conversationId]', params: { conversationId: data.conversationId } })
+        router.push({
+          pathname: '/(fan)/messages/[conversationId]' as any,
+          params: { conversationId: data.conversationId },
+        })
         break
       default:
-        router.push('/notifications')
+        router.push('/(fan)/notifications' as any)
     }
   })
 
@@ -105,14 +117,15 @@ export function setupPushListeners() {
         pathname: '/call/incoming',
         params: {
           callId: data.callId,
-          callType: data.type,
-          fanName: data.fan?.name,
-          fanImage: data.fan?.image,
+          callType: data.callType || data.type || 'VOICE',
+          callerName: data.fan?.name || 'Fan Member',
+          callerAvatar: data.fan?.image || '',
           conversationId: data.conversationId,
         },
       })
     }
   })
+
 
   return () => {
     responseSub.remove()
