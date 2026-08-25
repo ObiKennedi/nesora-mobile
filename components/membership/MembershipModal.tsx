@@ -24,6 +24,8 @@ import {
 } from 'lucide-react-native'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { useAuthStore } from '@/lib/auth'
+import { initializeMembershipSubscription, verifyMembershipSubscription } from '@/lib/paystack'
 import { Colors, Radius, Shadows } from '@/constants/theme'
 
 const BENEFITS = [
@@ -45,7 +47,7 @@ const BENEFITS = [
   {
     icon: ShieldCheck,
     title: 'Exclusive Member Badge',
-    desc: 'Stand out across the platform with your verified NESORA Plus badge.',
+    desc: 'Stand out in comments and live chats with your NESORA Plus badge.',
   },
 ]
 
@@ -55,10 +57,11 @@ interface MembershipModalProps {
 }
 
 export function MembershipModal({ visible, onClose }: MembershipModalProps) {
+  const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const [pendingRef, setPendingRef] = useState<string | null>(null)
 
-  // Check Membership Status
+  // Membership status query
   const { data: statusData, isLoading: loadingStatus, refetch } = useQuery({
     queryKey: ['membershipStatus'],
     queryFn: async () => {
@@ -71,12 +74,11 @@ export function MembershipModal({ visible, onClose }: MembershipModalProps) {
   // Initialize Paystack Recurring Subscription (₦5,000/mo)
   const initMutation = useMutation({
     mutationFn: async () => {
-      const res = await api.post('/subscription/membership/initialize')
-      return res.data
+      return await initializeMembershipSubscription(user?.email, user?.id)
     },
     onSuccess: async (data) => {
       if (data?.authorizationUrl) {
-        setPendingRef(data.reference)
+        setPendingRef(data.reference ?? null)
         const supported = await Linking.canOpenURL(data.authorizationUrl)
         if (supported) {
           await Linking.openURL(data.authorizationUrl)
@@ -88,15 +90,14 @@ export function MembershipModal({ visible, onClose }: MembershipModalProps) {
       }
     },
     onError: (err: any) => {
-      Alert.alert('Error', err?.response?.data?.message || 'Could not start membership checkout.')
+      Alert.alert('Error', err?.response?.data?.message || err?.message || 'Could not start membership checkout.')
     },
   })
 
   // Verify Paystack Payment
   const verifyMutation = useMutation({
     mutationFn: async (ref: string) => {
-      const res = await api.post('/subscription/membership/verify', { reference: ref })
-      return res.data
+      return await verifyMembershipSubscription(ref)
     },
     onSuccess: (data) => {
       if (data?.isPaidMember || data?.success) {
@@ -111,7 +112,7 @@ export function MembershipModal({ visible, onClose }: MembershipModalProps) {
       }
     },
     onError: (err: any) => {
-      Alert.alert('Verification Error', err?.response?.data?.message || 'Could not verify membership payment.')
+      Alert.alert('Verification Error', err?.response?.data?.message || err?.message || 'Could not verify payment yet.')
     },
   })
 

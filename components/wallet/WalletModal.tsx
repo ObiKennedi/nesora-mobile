@@ -24,7 +24,8 @@ import {
 } from 'lucide-react-native'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
-import { api } from '@/lib/api'
+import { useAuthStore } from '@/lib/auth'
+import { initializeWalletTopUp, verifyWalletTopUp } from '@/lib/paystack'
 import { Colors, Radius, Shadows } from '@/constants/theme'
 
 const TOPUP_PRESETS = [1000, 2000, 5000, 10000]
@@ -35,6 +36,7 @@ interface WalletModalProps {
 }
 
 export function WalletModal({ visible, onClose }: WalletModalProps) {
+  const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const [isTopUpOpen, setIsTopUpOpen] = useState(false)
   const [amount, setAmount] = useState('2000')
@@ -62,12 +64,11 @@ export function WalletModal({ visible, onClose }: WalletModalProps) {
   // Paystack Initialize Mutation
   const initMutation = useMutation({
     mutationFn: async (numAmount: number) => {
-      const res = await api.post('/wallet/initialize', { amount: numAmount })
-      return res.data
+      return await initializeWalletTopUp(numAmount, user?.email, user?.id)
     },
     onSuccess: async (data) => {
       if (data?.authorizationUrl) {
-        setPendingRef(data.reference)
+        setPendingRef(data.reference ?? null)
         // Open Paystack checkout in browser
         const supported = await Linking.canOpenURL(data.authorizationUrl)
         if (supported) {
@@ -80,15 +81,15 @@ export function WalletModal({ visible, onClose }: WalletModalProps) {
       }
     },
     onError: (err: any) => {
-      Alert.alert('Error', err?.response?.data?.message || 'Could not initialize top up.')
+      Alert.alert('Error', err?.response?.data?.message || err?.message || 'Could not initialize top up.')
     },
   })
 
   // Verify Paystack Payment Mutation
   const verifyMutation = useMutation({
     mutationFn: async (ref: string) => {
-      const res = await api.post('/wallet/verify', { reference: ref })
-      return res.data
+      const numAmount = parseInt(amount, 10) || 2000
+      return await verifyWalletTopUp(ref, numAmount)
     },
     onSuccess: (data) => {
       if (data?.success) {
@@ -104,9 +105,10 @@ export function WalletModal({ visible, onClose }: WalletModalProps) {
       }
     },
     onError: (err: any) => {
-      Alert.alert('Verification Error', err?.response?.data?.message || 'Could not verify payment yet.')
+      Alert.alert('Verification Error', err?.response?.data?.message || err?.message || 'Could not verify payment yet.')
     },
   })
+
 
   const handleTopUpSubmit = () => {
     const num = Number(amount.replace(/[^0-9]/g, ''))

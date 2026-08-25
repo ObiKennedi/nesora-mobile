@@ -28,6 +28,8 @@ import { api } from '@/lib/api'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Colors, Radius } from '@/constants/theme'
 
+import { SideDrawer } from '@/components/navigation/SideDrawer'
+
 async function fetchCreatorStats() {
   try {
     const { data } = await api.get('/creator/stats')
@@ -51,6 +53,7 @@ export default function CreatorDashboardScreen() {
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = useState(false)
+  const [drawerVisible, setDrawerVisible] = useState(false)
 
   const { data: stats } = useQuery({
     queryKey: ['creatorStats'],
@@ -72,13 +75,14 @@ export default function CreatorDashboardScreen() {
         <View style={styles.headerLeft}>
           <TouchableOpacity
             style={styles.menuBtn}
-            onPress={() => router.push('/(fan)/profile' as any)}
+            onPress={() => setDrawerVisible(true)}
             activeOpacity={0.7}
           >
             <Menu size={22} color="#1A202C" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Dashboard</Text>
         </View>
+
 
         <View style={styles.headerRight}>
           <TouchableOpacity
@@ -182,9 +186,16 @@ export default function CreatorDashboardScreen() {
           <ArrowRight size={18} color={Colors.primary} />
         </TouchableOpacity>
       </ScrollView>
+
+      {/* ── Hamburger Side Drawer ── */}
+      <SideDrawer
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+      />
     </View>
   )
 }
+
 
 const styles = StyleSheet.create({
   root: {

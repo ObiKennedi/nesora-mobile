@@ -24,7 +24,7 @@ import {
   ArrowRight,
 } from 'lucide-react-native'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { initializeMembershipSubscription, verifyMembershipSubscription } from '@/lib/paystack'
 import { useAuthStore } from '@/lib/auth'
 import { Colors, Radius, Shadows } from '@/constants/theme'
 
@@ -59,12 +59,11 @@ export default function OnboardingBillingScreen() {
   // Initialize Paystack Recurring Subscription (₦5,000/mo)
   const initMutation = useMutation({
     mutationFn: async () => {
-      const res = await api.post('/subscription/membership/initialize')
-      return res.data
+      return await initializeMembershipSubscription(user?.email, user?.id)
     },
     onSuccess: async (data) => {
       if (data?.authorizationUrl) {
-        setPendingRef(data.reference)
+        setPendingRef(data.reference ?? null)
         const supported = await Linking.canOpenURL(data.authorizationUrl)
         if (supported) {
           await Linking.openURL(data.authorizationUrl)
@@ -76,15 +75,14 @@ export default function OnboardingBillingScreen() {
       }
     },
     onError: (err: any) => {
-      Alert.alert('Error', err?.response?.data?.message || 'Could not start membership payment.')
+      Alert.alert('Error', err?.response?.data?.message || err?.message || 'Could not start membership payment.')
     },
   })
 
   // Verify Paystack Payment
   const verifyMutation = useMutation({
     mutationFn: async (ref: string) => {
-      const res = await api.post('/subscription/membership/verify', { reference: ref })
-      return res.data
+      return await verifyMembershipSubscription(ref)
     },
     onSuccess: (data) => {
       if (data?.isPaidMember || data?.success) {
@@ -102,9 +100,10 @@ export default function OnboardingBillingScreen() {
       }
     },
     onError: (err: any) => {
-      Alert.alert('Verification Error', err?.response?.data?.message || 'Could not verify payment yet.')
+      Alert.alert('Verification Error', err?.response?.data?.message || err?.message || 'Could not verify payment yet.')
     },
   })
+
 
   const handleSkipFree = () => {
     router.replace('/(fan)/feed')

@@ -161,7 +161,38 @@ export default function FanTabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="profile/billing"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile/liked"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile/saved"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile/settings"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile/wallet"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
+
   )
 }
 

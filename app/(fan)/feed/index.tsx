@@ -21,13 +21,16 @@ import {
   Radio,
   Sparkles,
   Compass,
+  Menu,
 } from 'lucide-react-native'
 import { api } from '@/lib/api'
 import PostCard from '@/components/feed/PostCard'
 import { LiveStreamCard, LiveStream } from '@/components/feed/LiveStreamCard'
 import { MembershipModal } from '@/components/membership/MembershipModal'
+import { SideDrawer } from '@/components/navigation/SideDrawer'
 import { Loader } from '@/components/Loader'
 import { Colors, Radius, Shadows } from '@/constants/theme'
+
 
 const CATEGORIES = [
   { id: 'ALL', label: 'All', emoji: '✨' },
@@ -64,6 +67,7 @@ export default function FeedScreen() {
   const [activeCategory, setActiveCategory] = useState('ALL')
   const [refreshing, setRefreshing] = useState(false)
   const [membershipModalVisible, setMembershipModalVisible] = useState(false)
+  const [drawerVisible, setDrawerVisible] = useState(false)
 
   // Posts Feed query
   const { data: feedData, isLoading: loadingFeed } = useQuery({
@@ -114,10 +118,19 @@ export default function FeedScreen() {
 
       {/* ── Top App Bar ── */}
       <View style={styles.header}>
-        {/* Brand Logo */}
+        {/* Brand Logo & Hamburger Menu */}
         <View style={styles.brandContainer}>
-          <Text style={styles.brandLogoN}>N</Text>
-          <Text style={styles.brandLogoText}>esora</Text>
+          <TouchableOpacity
+            style={styles.menuBtn}
+            onPress={() => setDrawerVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Menu size={22} color="#1A202C" />
+          </TouchableOpacity>
+          <View style={styles.brandLogoRow}>
+            <Text style={styles.brandLogoN}>N</Text>
+            <Text style={styles.brandLogoText}>esora</Text>
+          </View>
         </View>
 
         {/* Action Buttons */}
@@ -129,6 +142,7 @@ export default function FeedScreen() {
           >
             <Search size={18} color="#2D3748" strokeWidth={2.2} />
           </TouchableOpacity>
+
 
           <TouchableOpacity
             style={styles.iconBtn}
@@ -332,11 +346,15 @@ export default function FeedScreen() {
         visible={membershipModalVisible}
         onClose={() => setMembershipModalVisible(false)}
       />
+
+      {/* ── Hamburger Side Drawer ── */}
+      <SideDrawer
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+      />
     </View>
   )
 }
-
-
 
 const styles = StyleSheet.create({
   root: {
@@ -349,10 +367,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 52,
     paddingBottom: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     backgroundColor: '#FFFFFF',
   },
   brandContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  menuBtn: {
+    padding: 4,
+  },
+  brandLogoRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
   },
@@ -364,6 +390,7 @@ const styles = StyleSheet.create({
   },
   brandLogoText: {
     fontSize: 24,
+
     fontWeight: '800',
     color: '#8A3B14',
     letterSpacing: -0.5,
